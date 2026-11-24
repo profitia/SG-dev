@@ -1,7 +1,9 @@
 name: Platform contract integration
+run-name: "${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'validate-sg2' && inputs.candidate_pr != '' && format('SG2 proof PR #{0} @ {1}', inputs.candidate_pr, inputs.expected_sha) || '' }}"
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'packages/platform-contracts/**'
       - 'packages/srm-xray/**'
@@ -69,8 +71,8 @@ permissions:
 
 jobs:
   producer:
-    name: Architecture contract and lab
-    if: inputs.mode != 'test-only-pr1283'
+    name: ${{ github.event.action == 'ready_for_review' && 'Architecture readiness no-op' || 'Architecture contract and lab' }}
+    if: inputs.mode != 'test-only-pr1283' && github.event.action != 'ready_for_review'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -106,8 +108,8 @@ jobs:
         run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs scripts/governance/controlled-package-ci.test.mjs scripts/governance/controlled-package-ci-path-coverage.test.mjs scripts/governance/development-execution.test.mjs
 
   dashboard-source-regression:
-    name: SG2 dashboard source regression
-    if: github.event_name != 'workflow_dispatch' || inputs.mode == 'integration'
+    name: ${{ github.event.action == 'ready_for_review' && 'Dashboard readiness no-op' || 'SG2 dashboard source regression' }}
+    if: github.event.action != 'ready_for_review' && (github.event_name != 'workflow_dispatch' || inputs.mode == 'integration')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -190,7 +192,8 @@ jobs:
           if-no-files-found: error
 
   consumers:
-    name: ${{ matrix.project }} contract adoption
+    name: ${{ github.event.action == 'ready_for_review' && format('{0} adoption readiness no-op', matrix.project) || format('{0} contract adoption', matrix.project) }}
+    if: github.event.action != 'ready_for_review'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -225,11 +228,121 @@ jobs:
           path: /tmp/platform-integration-proof.json
           retention-days: 30
 
-  operations:
-    name: ${{ matrix.project }} operation integration
+  sg2-operation-integration:
+    name: SG2 operation integration
     needs: controlled-sg2
-    # This public job has no package credential; SG2 verifies a separately bound proof.
-    if: always() && (github.event_name != 'workflow_dispatch' || inputs.mode == 'integration') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    # Drafts cannot merge. Exact-source verification runs when review starts.
+    if: always() && (github.event_name != 'workflow_dispatch' || inputs.mode == 'integration') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Resolve explicit adoption without silently skipping an existing adapter
+        id: adoption
+        env:
+          DIRECTORY: apps/sg-runtime
+          ADAPTER: apps/sg-runtime/lib/benchmark/operation-context.ts
+        run: |
+          if [ -f "$DIRECTORY/operation-integration.json" ]; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          elif [ -f "$ADAPTER" ]; then
+            echo 'Adapter exists without explicit contract adoption' >&2
+            exit 1
+          else
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo 'Operation-context integration is not adopted by this source; no runtime proof claimed.'
+          fi
+      - name: Checkout authority controller for public SG2 proof verification
+        if: steps.adoption.outputs.enabled == 'true'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event_name == 'pull_request' && 'main' || github.sha }}
+          path: trusted-control
+          persist-credentials: false
+      - name: Verify controlled SG2 proof for the exact candidate without package access
+        if: steps.adoption.outputs.enabled == 'true' && github.event.action != 'ready_for_review'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node trusted-control/scripts/governance/controlled-package-ci.mjs verify
+      - name: Verify published exact SG2 proof on ready for review
+        if: steps.adoption.outputs.enabled == 'true' && github.event.action == 'ready_for_review'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          CANDIDATE_PR: ${{ github.event.pull_request.number }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { execFileSync } from 'node:child_process';
+
+          const repo = 'profitia/SG-dev';
+          const workflow = '.github/workflows/platform-contracts-ci.yml';
+          const sha = process.env.EXPECTED_SHA;
+          const number = process.env.CANDIDATE_PR;
+          assert.match(sha, /^[a-f0-9]{40}$/);
+          assert.match(number, /^[1-9][0-9]*$/);
+          const get = endpoint => JSON.parse(execFileSync('gh', ['api', 'repos/' + repo + '/' + endpoint], {
+            encoding: 'utf8', timeout: 15000, maxBuffer: 4 * 1024 * 1024,
+          }));
+          const checkPr = () => {
+            const pr = get('pulls/' + number);
+            assert.ok(pr.number === Number(number) && pr.state === 'open' && pr.draft === false
+              && pr.user?.login === 'profitia' && pr.head?.repo?.full_name === repo
+              && pr.base?.repo?.full_name === repo && pr.base?.ref === 'main' && pr.head?.sha === sha,
+              'SG2_PROOF_PR_IDENTITY_CHANGED');
+          };
+          checkPr();
+          const { id: workflowId } = get('actions/workflows/platform-contracts-ci.yml');
+          const title = 'SG2 proof PR #' + number + ' @ ' + sha;
+          const trusted = run => run.workflow_id === workflowId && run.path === workflow
+            && run.repository?.full_name === repo && run.head_repository?.full_name === repo
+            && run.head_branch === 'main' && run.event === 'workflow_dispatch'
+            && run.actor?.login === 'profitia' && run.triggering_actor?.login === 'profitia';
+          const runs = get('actions/workflows/' + workflowId + '/runs?branch=main&event=workflow_dispatch&per_page=50').workflow_runs;
+          const exact = runs.filter(run => trusted(run) && run.display_title === title);
+          assert.ok(exact.length <= 1, 'SG2_PRODUCERS_CONFLICT');
+          const eligible = new Map(runs.filter(run => trusted(run) && run.status === 'completed'
+            && run.conclusion === 'success' && run.run_attempt === 1
+            && (exact.length ? run.id === exact[0].id : !run.display_title?.startsWith('SG2 proof PR #')))
+            .map(run => [String(run.id), run]));
+          assert.ok(eligible.size > 0, 'SG2_PROOF_NOT_READY');
+
+          // The authority-main verifier checks the original artifact and policy. This step
+          // binds its successful choice to the admitted PR and pins the original attempt.
+          const output = execFileSync('node', ['trusted-control/scripts/governance/controlled-package-ci.mjs', 'verify'], {
+            encoding: 'utf8', timeout: 120000, maxBuffer: 1024 * 1024,
+          }).trim();
+          const match = output.match(/https:\/\/github\.com\/profitia\/SG-dev\/actions\/runs\/([1-9][0-9]*)$/);
+          const selected = match && eligible.get(match[1]);
+          assert.ok(selected, 'SG2_PROOF_PRODUCER_MISMATCH');
+          const endpoint = 'actions/runs/' + selected.id;
+          const completed = get(endpoint);
+          const artifacts = get(endpoint + '/artifacts').artifacts.filter(artifact =>
+            artifact.name === 'sg2-controlled-operation-proof' && artifact.expired === false);
+          assert.ok(completed.id === selected.id && trusted(completed) && completed.head_sha === selected.head_sha
+            && completed.run_attempt === 1 && completed.status === 'completed' && completed.conclusion === 'success',
+            'SG2_PROOF_ATTEMPT_CHANGED');
+          assert.ok(artifacts.length === 1 && artifacts[0].workflow_run?.id === selected.id
+            && artifacts[0].workflow_run?.head_sha === selected.head_sha
+            && /^sha256:[a-f0-9]{64}$/.test(artifacts[0].digest), 'SG2_PROOF_ARTIFACT_INVALID');
+          checkPr();
+          console.log(output);
+          JS
+
+  operations:
+    name: ${{ github.event.action == 'ready_for_review' && 'SRM operation readiness no-op' || format('{0} operation integration', matrix.project) }}
+    needs: controlled-sg2
+    # Readiness only schedules the SG2 verifier. Preserve the prior SRM check context.
+    if: always() && (github.event_name != 'workflow_dispatch' || inputs.mode == 'integration') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.event.action != 'ready_for_review'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -238,10 +351,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - project: SG2
-            directory: apps/sg-runtime
-            database: sg2_operation_test
-            adapter: apps/sg-runtime/lib/benchmark/operation-context.ts
           - project: SRM
             directory: apps/srm
             database: srm_app
@@ -284,19 +393,6 @@ jobs:
       - name: Install public test-fixture dependencies
         if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SRM'
         run: npm --prefix apps/architecture-lab ci --ignore-scripts --no-audit --no-fund
-      - name: Checkout authority controller for public SG2 proof verification
-        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SG2'
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: ${{ github.event_name == 'pull_request' && 'main' || github.sha }}
-          path: trusted-control
-          persist-credentials: false
-      - name: Verify controlled SG2 proof for the exact candidate without package access
-        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SG2'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: node trusted-control/scripts/governance/controlled-package-ci.mjs verify
       - name: Clean application dependency installation
         if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SRM'
         working-directory: ${{ matrix.directory }}
