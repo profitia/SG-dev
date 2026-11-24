@@ -12,12 +12,15 @@ export function createBenchmarkRequester(options:{mode:()=> 'clerk'|'legacy_demo
   const accepted=(url.pathname==='/api/benchmark/search'&&['GET','POST'].includes(method))
    ||(url.pathname==='/api/benchmark/metadata'||/^\/api\/benchmark\/metadata\/[^/]+\/values$/.test(url.pathname))&&method==='GET'
    ||['/api/benchmark/context','/api/benchmark/ai-search'].includes(url.pathname)&&method==='POST'
+  const preparedAnalytics=url.pathname==='/api/benchmark/analytics-eligibility'&&method==='GET'
   const pickerAccepted=(url.pathname==='/api/benchmark/search'&&method==='GET')
    ||url.pathname==='/api/benchmark/metadata/PriceType/values'&&method==='GET'
    ||url.pathname==='/api/benchmark/preview'&&method==='GET'
    ||url.pathname==='/api/benchmark/selection'&&['GET','POST'].includes(method)
-  if(url.origin!==origin||url.username||url.password||url.hash||!(surface==='discovery'?accepted:pickerAccepted)||init.body!==undefined&&typeof init.body!=='string'
+  if(url.origin!==origin||url.username||url.password||url.hash||!(surface==='discovery'?accepted||preparedAnalytics:pickerAccepted)||init.body!==undefined&&typeof init.body!=='string'
    ||init.credentials!==undefined&&init.credentials!=='same-origin'||init.redirect!==undefined&&init.redirect!=='error')throw Error('Finder request unavailable')
+  if(preparedAnalytics&&([...url.searchParams.keys()].some(key=>!['locale','seriesId','displayName'].includes(key)||url.searchParams.getAll(key).length!==1)
+   ||init.body!=null||[...new Headers(init.headers).keys()].length>0))throw Error('Finder request unavailable')
   if(surface==='picker'){
    const allowed=url.pathname==='/api/benchmark/search'?['q','limit']:url.pathname==='/api/benchmark/preview'?['seriesName','range']:url.pathname.includes('/metadata/')?['limit']:[]
    const headers=new Headers(init.headers)
@@ -26,8 +29,9 @@ export function createBenchmarkRequester(options:{mode:()=> 'clerk'|'legacy_demo
     ||method==='POST'&&(typeof init.body!=='string'||headers.get('content-type')!=='application/json'))throw Error('Finder request unavailable')
    if(init.signal?.aborted)throw new DOMException('Picker request aborted','AbortError')
   }
+  if(preparedAnalytics&&init.signal?.aborted)throw new DOMException('Analytics request aborted','AbortError')
   const token=await options.getToken();if(closed||!token||/[\s,]/.test(token)||token.length>8192)throw Error('Session unavailable')
-  if(surface==='picker'&&init.signal?.aborted)throw new DOMException('Picker request aborted','AbortError')
+  if((surface==='picker'||preparedAnalytics)&&init.signal?.aborted)throw new DOMException('Picker request aborted','AbortError')
   const discovery=accepted
   const signature=JSON.stringify([method,url.pathname+url.search,init.body??null])
   let key=pending.get(signature);if(discovery&&!key){key=options.newKey();if(!/^finder_[A-Za-z0-9_-]{16,100}$/.test(key))throw Error('Finder request unavailable');pending.set(signature,key)}

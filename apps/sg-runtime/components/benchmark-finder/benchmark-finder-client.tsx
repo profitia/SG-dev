@@ -966,6 +966,13 @@ export function BenchmarkFinderClient({
     searchParams.get(FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM),
   )
   const isPickerMode = selectionMode === 'picker' && typeof onBenchmarkSelected === 'function'
+  const [showPreparedForecastPilot, setShowPreparedForecastPilot] = useState(false)
+  const [preparedForecastOpen, setPreparedForecastOpen] = useState(false)
+  useEffect(() => {
+    // Match the named SG2 Development entry point. This is presentation only.
+    setShowPreparedForecastPilot(identityMode === 'clerk' && !isPickerMode &&
+      window.location.origin === 'https://dev-sg2.spendguru.app')
+  }, [identityMode, isPickerMode])
   const initialLocaleSwitchSnapshotRef = useRef<LocaleSwitchSnapshot | null>(readLocaleSwitchSnapshot(locale, persistence))
   const localeSnapshotHandledRef = useRef(!initialLocaleSwitchSnapshotRef.current)
   const initialLocaleSwitchSnapshot = initialLocaleSwitchSnapshotRef.current
@@ -1718,8 +1725,7 @@ export function BenchmarkFinderClient({
     }
   }
 
-  async function ensureAnalyticsEligibility(candidate: BenchmarkCandidate) {
-    const seriesId = candidate.providerSeries.providerSeriesId
+  async function ensureAnalyticsEligibility(seriesId: string, displayName: string) {
     const currentState = getCandidatePreviewState(seriesId)
     if (currentState.analyticsEligibility.status === 'loading' || currentState.analyticsEligibility.status === 'ready') {
       return
@@ -1755,14 +1761,14 @@ export function BenchmarkFinderClient({
     const params = new URLSearchParams({
       locale,
       seriesId,
-      displayName: candidate.displayName,
+      displayName,
     })
-    if (forecastWarmupExperiment) {
+    if (identityMode === 'legacy_demo' && forecastWarmupExperiment) {
       params.set(FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM, forecastWarmupExperiment)
     }
 
     try {
-      const payload = await readJson<AnalyticsEligibilityResponse>(await fetch(`/api/benchmark/analytics-eligibility?${params.toString()}`, {
+      const payload = await readJson<AnalyticsEligibilityResponse>(await discoveryFetch(`/api/benchmark/analytics-eligibility?${params.toString()}`, {
         cache: 'no-store',
         signal: controller.signal,
       }))
@@ -1883,7 +1889,7 @@ export function BenchmarkFinderClient({
     }))
 
     startSearchTransition(() => {
-      ensureAnalyticsEligibility(candidate).catch(() => undefined)
+      ensureAnalyticsEligibility(seriesId, candidate.displayName).catch(() => undefined)
       loadPreview(candidate, current.range).catch(() => undefined)
     })
   }
@@ -2134,7 +2140,7 @@ export function BenchmarkFinderClient({
       previewError: null,
     }))
     startSearchTransition(() => {
-      ensureAnalyticsEligibility(candidate).catch(() => undefined)
+      ensureAnalyticsEligibility(seriesId, candidate.displayName).catch(() => undefined)
       loadPreview(candidate, DEFAULT_PREVIEW_RANGE).catch(() => undefined)
     })
     setPendingPortfolioSeriesId(null)
@@ -2175,6 +2181,10 @@ export function BenchmarkFinderClient({
     }
   }, [hasSearched, previewStates, visibleResults])
 
+  const preparedForecastBenchmark = PORR_DEMO_FORECAST_BENCHMARKS.find(benchmark => benchmark.seriesId === 'b_c1_cl')
+  const preparedForecast = preparedForecastBenchmark
+    ? getCandidatePreviewState(preparedForecastBenchmark.seriesId).analyticsEligibility
+    : null
   const presentedResults = visibleResults.filter(candidate=>matchesQualification(enrichedCandidates[candidate.providerSeries.providerSeriesId]??candidate,pciFilter)).filter(candidate=>!onlyForecast||PORR_DEMO_FORECAST_BENCHMARKS.some(item=>item.seriesId===candidate.providerSeries.providerSeriesId)||previewStates[candidate.providerSeries.providerSeriesId]?.analyticsEligibility.forecastPortfolioEnabled).sort((a,b)=>resultSort==='name'?a.displayName.localeCompare(b.displayName,locale):0)
   const presentedSeriesKey=JSON.stringify(presentedResults.map(candidate=>candidate.providerSeries.providerSeriesId))
   useEffect(()=>{
@@ -2471,6 +2481,35 @@ export function BenchmarkFinderClient({
             </div>
           ) : null}
         </section>
+
+        {showPreparedForecastPilot && preparedForecastBenchmark ? (
+          <section className="bf-shelf" aria-labelledby="sg2-prepared-forecast-title">
+            <div className="bf-shelf-title">
+              <h2 id="sg2-prepared-forecast-title" className="text-lg font-semibold text-slate-950">{t('portfolio.title')}</h2>
+            </div>
+            <div className="bf-shortcuts">
+              <button type="button" className="min-h-11 rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-medium"
+                aria-expanded={preparedForecastOpen}
+                aria-label={t('portfolio.openBenchmark', { benchmark: preparedForecastBenchmark.label[locale] })}
+                onClick={() => {
+                  setPreparedForecastOpen(!preparedForecastOpen)
+                  if (!preparedForecastOpen) {
+                    ensureAnalyticsEligibility(preparedForecastBenchmark.seriesId, preparedForecastBenchmark.label[locale]).catch(() => undefined)
+                  }
+                }}>
+                {preparedForecastBenchmark.label[locale]}<FinderGlyph kind="arrow" />
+              </button>
+            </div>
+            {preparedForecastOpen && (preparedForecast?.status === 'ready' && preparedForecast.eligible && preparedForecast.analyticsUrl ? (
+              <NativeAnalyticsEmbed locale={locale} title={preparedForecastBenchmark.label[locale]}
+                key={preparedForecast.analyticsUrl} src={localizeDashboardPreviewAnalyticsUrl(preparedForecast.analyticsUrl, locale)}
+                className="w-full border-0 bg-transparent" style={{ height: DEFAULT_ANALYTICS_IFRAME_HEIGHT_STYLE }}
+                data-testid="benchmark-analytics-embed" />
+            ) : (
+              <p role="status">{t(preparedForecast?.status === 'loading' ? 'common.loading' : 'results.analyticsUnavailable')}</p>
+            ))}
+          </section>
+        ) : null}
 
         {showPorrDemoPortfolio ? (
           <section
