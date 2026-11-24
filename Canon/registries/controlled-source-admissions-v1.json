@@ -4783,7 +4783,7 @@
       "taskId": "ARCH-PI-NEWSFEED-READER-INVITATION-20261117",
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "user:call_fcd53cb33d074702bd9793096683e338:item0 \u2014 explicit four-file SOURCE_VALIDATION_ONLY bcee445734f4c1bae12b266c99893ed545656121; excludes migration and deployment activation",
+      "approvalRef": "user:call_fcd53cb33d074702bd9793096683e338:item0 — explicit four-file SOURCE_VALIDATION_ONLY bcee445734f4c1bae12b266c99893ed545656121; excludes migration and deployment activation",
       "sourceSha": "bcee445734f4c1bae12b266c99893ed545656121",
       "baseSha": "b0eddc27a0405eac5233497414a934f721bc36d2",
       "validFrom": "2026-11-19T01:21:20.127Z",
@@ -14829,6 +14829,31 @@
           "blob": "dec11d1e3d4378a0e173e57c0ec65a3efee1c150",
           "mode": "100644",
           "status": "modified",
+          "projectKey": "SG2",
+          "owner": "Dashboard Preview",
+          "surfaceId": "SG2-BASE-003"
+        }
+      ]
+    },
+    {
+      "id": "SG2:SG2-ARCH-DEV-RELEASE-OPT-20261121-E5-ACTIVATION",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-ARCH-DEV-RELEASE-OPT-20261121-E5-ACTIVATION",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner:chat:01a1fe1a-1ec8-7fc3-adf2-8a9db538f31b:e5-conditional-go-52fa13e6429e13ae7cd46d322a3a078fc4c68582",
+      "sourceSha": "52fa13e6429e13ae7cd46d322a3a078fc4c68582",
+      "baseSha": "2fd1db4890d9684b5d0989c4302f805a808f6426",
+      "validFrom": "2026-11-24T18:01:30.051Z",
+      "validUntil": "2026-11-26T18:01:30.051Z",
+      "files": [
+        {
+          "path": "apps/dashboard-preview/scripts/verify-built-release.mjs",
+          "blob": "1a9835f4f7548d5df84c98b3afa913d310ac6170",
+          "mode": "100644",
+          "status": "added",
           "projectKey": "SG2",
           "owner": "Dashboard Preview",
           "surfaceId": "SG2-BASE-003"
