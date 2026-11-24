@@ -1429,7 +1429,7 @@
     "packages/platform-contracts/test/request-operations.test.mjs": "6c534bea118ae484607d3002f729f1cf9409f1999f647c90a5b38409058241df",
     "packages/platform-contracts/test/request-reservation.test.mjs": "85795d13c93934199062e076b0de28835e294ca08587131868aee37c3e30c4ed",
     "packages/platform-contracts/test/request-work.test.mjs": "a23c5ec092293070e278cd892ab2a3721a04ea7e91f199f012e23dcf85fe1f1d",
-    "packages/platform-contracts/test/sdk-source-context.mjs": "ef8dbfb01ada68fb424063e7c3f18f66e5e4fdc8010bb045e5838720204f2207",
+    "packages/platform-contracts/test/sdk-source-context.mjs": "c955cf95f76bff2503c1d1a4d5107dbc78fb6e93ad29e8df3c8d3d5162104993",
     "packages/platform-contracts/test/sdk-source-context.test.mjs": "919ca4e7e65e8a118e06f8bb98a6268ac6609b2f54f18e835c819a5ca52a31de",
     "packages/platform-contracts/test/service-read.test.mjs": "975c8df45b3a48631ff2d7a5e418effa62e68b92830b8fa47754fbabb7d65e28",
     "packages/platform-contracts/test/sg2-denial-audit-reader-postgres.test.mjs": "2565037ffb9ac8c08c2cbe5335afccb0048021fe906831b87f4b5b5754922f0f",
@@ -1694,9 +1694,9 @@
     "packages/srm-xray/src/workflow.css": "b9b807de8e1c43af7263376a70ad81c2be94cb5d236dbbcbd99f690be66415e9",
     "packages/srm-xray/src/workflow.ts": "67cd3c601d32b17d86865b62459d073013698d40d5840ae0ae5bee18a08336d2",
     "packages/srm-xray/tsconfig.json": "11849720cf7010564984d2489e26ba1ba98cc4c263edb5e019a01ca81aadb4d9",
-    "scripts/governance/controlled-package-ci-path-coverage.test.mjs": "73ef688cd5a0a29bc617ece99d95ef9c8005322d7d2d43bd64f8e4acbacf978a",
-    "scripts/governance/controlled-package-ci.mjs": "2b77fd448177be2409842c1d7384670b66cdc9f8d2ecc08459b0a180e181b51e",
-    "scripts/governance/controlled-package-ci.test.mjs": "6ca9564178d1f7d3e6384d110f8afb69e635240f65eecdd1ab4755642a9f445e",
+    "scripts/governance/controlled-package-ci-path-coverage.test.mjs": "0a7f50d2fb7d7ea5faa297b3f14e088bcd16f53ed978d7dbc67ecdceef728a6c",
+    "scripts/governance/controlled-package-ci.mjs": "98fa29e8d1cd1e7896632edb7a96f00f501d4291c4ac0b077753c9bc6f0705b1",
+    "scripts/governance/controlled-package-ci.test.mjs": "146325ea1df0a459d8991103873b4faf2db8632298fe2e1117c9d38b67675d5e",
     "scripts/governance/development-execution.mjs": "9fd9a11c305b9169605e7343cdfe90f6e55c886c912aca0781d7ff0a87cb7a0c",
     "scripts/governance/governance.test.mjs": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
     "scripts/governance/platform-source-hub-foundation.test.mjs": "0c4dbbc6747b40486ae2a96ea74d1b737b3575c96ac095615f26454f6ae09aea",
@@ -2216,6 +2216,7 @@
       "packages/platform-contracts/src/identity-renewal.mjs": "ba6148b1a0daefc6a3a8270b214ab7b87a9e7a6cd0970f39ba4b9083e5de6a51"
     }
   },
+  "reviewedZsrirHostManifest": {"sourceSha": "c23570b293922334cf26460e765c20b6920e3ac6", "afterSha256": "c5e6d878d9813a4589ea9aa6d7d27e79367009710a4833885719f39719517ce8"},
   "reviewedSdkInputContinuation": {
     "baseSha": "f75c6a5a170dd4b6597f67ab9790722657a1ef35",
     "recordId": "identity-existing-account-policy-denial-20261122",
