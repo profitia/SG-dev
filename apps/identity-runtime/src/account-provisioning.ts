@@ -1,6 +1,7 @@
 import type pg from 'pg'
 import { createIdentityProvisioner, type IdentityProvisioningOptions } from '@profitia/platform-contracts/identity-provisioning'
 import { createClerkIdentityAuthenticator } from '@profitia/platform-contracts/identity-provider'
+import { isOperationDenied } from '@profitia/platform-contracts/operation-context'
 import { BoundaryError, type RuntimeConfiguration, type RuntimeSdk, type IdentityAuthority } from './contracts.js'
 import { checkRequest } from './session-boundary.js'
 import { readConfiguration } from './config.js'
@@ -155,8 +156,28 @@ export function createAccountSurface({ configuration: inputConfiguration, client
     application: { appId: configuration.applicationId, environment: configuration.environment, issuer: configuration.issuer,
       authorizedParties: [configuration.origin, ...peers], bearerPeerReads: peers.map(sourceOrigin => ({ sourceOrigin, targetOrigin: configuration.origin, path: '/v1/account' })) },
     resolveBinding: key => authority.resolveBinding(key), now })
-  const authenticate = authenticateFor(verifiedClient)
-  async function read(request: Request, verify = authenticate) {
+  async function withVerifiedProvider<T>(action: (observedClient: RuntimeSdk) => Promise<T>, unavailableCode: 'ACCOUNT_UNAVAILABLE' | null = null): Promise<T> {
+    // A healthy refusal needs sign-in; SDK/transport/configuration failures stay 503.
+    let providerFailed = false, identityDenied = false
+    const observe = async <R>(call: () => Promise<R>) => {
+      try { return await call() } catch (error) {
+        if (error instanceof BoundaryError && error.status === 401) identityDenied = true
+        else providerFailed = true
+        throw error
+      }
+    }
+    const observedClient: RuntimeSdk = {
+      authenticateRequest: (request, options) => observe(() => verifiedClient.authenticateRequest(request, options)),
+      sessions: { getSession: id => observe(() => verifiedClient.sessions.getSession(id)), revokeSession: id => verifiedClient.sessions.revokeSession(id) },
+      users: { getUser: id => observe(() => verifiedClient.users.getUser(id)) },
+    }
+    try { return await action(observedClient) } catch (error) {
+      if (providerFailed) { if (unavailableCode) throw new BoundaryError(503, unavailableCode); throw error }
+      if (identityDenied || isOperationDenied(error) && error.reasonCode === 'ACCESS_BASIS_INVALID') throw new BoundaryError(401, 'ACCOUNT_REQUIRED')
+      throw error
+    }
+  }
+  async function read(request: Request, verify: ReturnType<typeof authenticateFor>) {
     checkRequest(request, configuration)
     if (request.method !== 'GET') throw new BoundaryError(403, 'ACCOUNT_READ_ONLY')
     try {
@@ -169,46 +190,29 @@ export function createAccountSurface({ configuration: inputConfiguration, client
       throw error
     }
   }
-  return Object.freeze({ configuration, read, async renew(request: Request) {
+  return Object.freeze({ configuration,
+    read: (request: Request) => withVerifiedProvider(observed => read(request, authenticateFor(observed))),
+    async renew(request: Request) {
     checkRequest(request, configuration)
     if (!renewalSchemaDigest || request.method !== 'POST' || request.headers.has('origin') || request.headers.has('cookie')
       || !/^Bearer [\x21-\x7e]{1,16384}$/i.test(request.headers.get('authorization') ?? '')) throw new BoundaryError(403, 'ACCOUNT_RENEWAL_REFUSED')
-    // Keep provider/transport failures distinct from a healthy denial. Both
-    // remain fail closed; only a verified denial asks the browser to sign in.
-    let providerFailed = false, identityDenied = false
-    const observe = async <T>(call: () => Promise<T>) => {
-      try { return await call() } catch (error) {
-        if (error instanceof BoundaryError && error.status === 401) identityDenied = true
-        else providerFailed = true
-        throw error
-      }
-    }
-    const observedClient: RuntimeSdk = {
-      authenticateRequest: (request, options) => observe(() => verifiedClient.authenticateRequest(request, options)),
-      sessions: { getSession: id => observe(() => verifiedClient.sessions.getSession(id)), revokeSession: id => verifiedClient.sessions.revokeSession(id) },
-      users: { getUser: id => observe(() => verifiedClient.users.getUser(id)) },
-    }
-    try {
+    return withVerifiedProvider(async observedClient => {
       const result = await provisionerFor(request.signal, null, true, observedClient).ensureAccount(request)
       const current = await read(new Request(configuration.origin + '/v1/account', { headers: { authorization: request.headers.get('authorization')! }, signal: request.signal }), authenticateFor(observedClient))
       if (current.userId !== result.userId) throw new BoundaryError(409, 'ACCOUNT_CHANGED')
       return current
-    } catch (error) {
-      if (providerFailed) throw new BoundaryError(503, 'ACCOUNT_UNAVAILABLE')
-      if (identityDenied) throw new BoundaryError(401, 'ACCOUNT_REQUIRED')
-      const denied = error as { name?: string; reasonCode?: string } | null
-      if (denied?.name === 'OperationDenied' && denied.reasonCode === 'ACCESS_BASIS_INVALID') throw new BoundaryError(401, 'ACCOUNT_REQUIRED')
-      throw error
-    }
+    }, 'ACCOUNT_UNAVAILABLE')
   }, async ensure(request: Request) {
     checkRequest(request, configuration, true)
     // Provisioning is ONLY same-origin. Peer GET admission never permits POST.
     const receipt = request.headers.get('x-registration-receipt')
     if (receipt !== null && !/^[A-Za-z0-9_-]{43}$/.test(receipt)) throw new BoundaryError(400, 'INVALID_REGISTRATION')
-    const provisioner = provisionerFor(request.signal, receipt)
-    const result = await provisioner.ensureAccount(request)
-    const current = await read(new Request(configuration.origin + '/v1/account', { headers: request.headers, signal: request.signal }))
-    if (current.userId !== result.userId) throw new BoundaryError(409, 'ACCOUNT_CHANGED')
-    return current
+    return withVerifiedProvider(async observedClient => {
+      const provisioner = provisionerFor(request.signal, receipt, false, observedClient)
+      const result = await provisioner.ensureAccount(request)
+      const current = await read(new Request(configuration.origin + '/v1/account', { headers: request.headers, signal: request.signal }), authenticateFor(observedClient))
+      if (current.userId !== result.userId) throw new BoundaryError(409, 'ACCOUNT_CHANGED')
+      return current
+    })
   } })
 }

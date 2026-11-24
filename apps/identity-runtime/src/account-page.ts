@@ -49,6 +49,11 @@ window.addEventListener('load', async () => {
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + credential, ...(window.spendGuruRegistrationReceipt?.() ? {'X-Registration-Receipt':window.spendGuruRegistrationReceipt()} : {}) }, body: '{}' });
       const result = await response.json();
       if (current !== generation || window.Clerk.session?.id !== key) return;
+      if (response.status === 401 && ['ACCOUNT_REQUIRED', 'VERIFIED_EMAIL_REQUIRED'].includes(result.error)) {
+        status.hidden = false;
+        status.textContent = cfg.en ? 'We could not confirm access to your account. Sign out and sign in again. If this continues, contact support.' : 'Nie udało się potwierdzić dostępu do konta. Wyloguj się i zaloguj ponownie. Jeśli problem nadal występuje, skontaktuj się z pomocą.';
+        retry.hidden = true; return;
+      }
       if (!response.ok || result.authenticated !== true || typeof result.userId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(result.userId) || !(Date.parse(result.expiresAt) > Date.now())) throw Error('ACCOUNT_UNAVAILABLE');
       const avatarRequest = async (method, body) => {
         const response = await fetch('/v1/account/assistant-avatar', { method, credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal,

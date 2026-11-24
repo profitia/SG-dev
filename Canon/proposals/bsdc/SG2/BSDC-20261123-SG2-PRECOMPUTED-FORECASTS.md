@@ -4,7 +4,7 @@
 
 > **Zakres bezwzględny: DEVELOPMENT ONLY.** Karta obejmuje zaprojektowanie, wdrożenie, uruchomienie, automatyczną eksploatację i odbiór funkcji w zarejestrowanym środowisku **SG2 Development**. Nie jest kartą wydania na inne środowiska, promocji danych ani aktywacji odrębnego środowiska aplikacyjnego. Takie działania podlegają osobnym zasadom i nie są warunkiem ukończenia tego przedsięwzięcia.
 >
-> **OWNER_APPROVED / PUBLISHED / FINAL — KARTA 1.0.** Owner zaakceptował projekt rozwiązania wraz z roadmapą E1–E2 oraz końcowymi kryteriami FINAL-01–10. Akceptacja i publikacja Karty nie są mandatem wykonawczym: nie uruchomiono żadnego etapu ani nie udzielono upoważnienia do zmian w zasobach.
+> **OWNER_APPROVED / PUBLISHED / FINAL — KARTA 1.0 z aneksem Ownera.** Aktualny zakres obejmuje 10 benchmarków w SG2 Development. Pierwotną zaakceptowaną podstawę wskazuje metryka, zmianę zakresu opisuje §0, a stan wykonania i mandat — §5.4.
 
 | Metryka | Ustalenie |
 | --- | --- |
@@ -13,40 +13,47 @@
 | Repozytorium / authority | [`profitia/SG-dev`](https://github.com/profitia/SG-dev) / `main`; historyczna rewizja discovery: `ed2eebb1ccacbaab66978fb60ab0cfbe140a4858` |
 | Lokalizacja PDR | `Canon/proposals/bsdc/SG2/BSDC-20261123-SG2-PRECOMPUTED-FORECASTS.md` — zaakceptowana ścieżka publikacji w authority `main` |
 | Środowisko prac i końcowego odbioru | **SG2 Development**; Neon `autumn-waterfall-65938876` / `br-dry-hall-b294222f` / `neondb`, zgodnie z aktualną topologią |
-| Stan | `OWNER_APPROVED / PUBLISHED / FINAL`, Karta `1.0`; podstawa merytoryczna: v0.5 po uzgodnionym Cross-Model Review |
+| Stan | `OWNER_APPROVED / PUBLISHED / FINAL`, Karta `1.0`; pierwotna podstawa merytoryczna: v0.5 po Cross-Model Review; bieżący zakres uwzględnia aneks Ownera w §0 |
 | Zaakceptowana rewizja bazowa | [Commit `b819bcc77b3b7efb2db06c3d630980c4ea47bc01`](https://github.com/profitia/SG-dev/commit/b819bcc77b3b7efb2db06c3d630980c4ea47bc01) · blob `0093bd91d35fd7998fd1beeab680dae3a7992f17` · [PR #1307](https://github.com/profitia/SG-dev/pull/1307) |
 | Liczba etapów | **2:** E1 pilot, E2 kompletne działanie i odbiór Development |
 | Liczba tasków | **9:** E1-T01–T04 oraz E2-T01–T05 |
 | Kryteria końcowe | **FINAL-01–FINAL-10**, wyłącznie dla Development |
-| Decyzja Ownera o starcie | **BRAK** — zaakceptowano Kartę i roadmapę; `URUCHOM ETAP E1` wymaga osobnej dyspozycji, a `URUCHOM ETAP E2` osobnego mandatu po rozliczeniu E1 |
+| Decyzja Ownera o starcie | E1 rozpoczęto odrębnym mandatem Ownera. E2 wymaga odrębnej decyzji po rozliczeniu E1 |
 
 ## 0. Rejestr kluczowych decyzji projektowych
 
 | Obszar | Uzgodniony projekt — podlega akceptacji całej Karty, jeśli nie wynika wprost z dyspozycji Ownera |
 | --- | --- |
 | Granica projektu | **Wyłącznie Development**. Utrzymanie cykli, odbiór i dowody pozostają w tym środowisku; inne procesy wydaniowe nie są zadaniami ani DoD tej Karty. |
-| Funkcja | 11 prawidłowo zidentyfikowanych instrumentów; 4 istniejące modele; wszystkie rzeczywiście dopuszczone warianty i horyzonty. |
-| Stan początkowy | W Neon Development istnieją zapisane prognozy i weryfikacje dla obecnych 11 ID; kwalifikacja `READY` poprzedza obliczanie braków. |
+| Funkcja | 10 prawidłowo zidentyfikowanych instrumentów; 4 istniejące modele; wszystkie rzeczywiście dopuszczone warianty i horyzonty. |
+| Stan początkowy | Dla pierwotnego portfela 11 kandydatów odczyty Neon Development wykazały zapisane artefakty (§2.1). Kwalifikacja `READY` dla portfela po aneksie poprzedza uzupełnianie braków. |
 | Sposób pracy | Reuse istniejących Forecast Core / Neon / prepared reads i przyrostowego maintenance; bez nowego silnika. |
 | Historia | Trzy oddzielne klasy: strict point-in-time, rekonstruowana diagnostyka oraz ocena rzeczywiście opublikowanej prognozy. |
 | Użytkownik i Clerk/E1 | **Bez ponownego interaktywnego potwierdzania** podczas zwykłej pracy po poprawnym wejściu do Findera, również po przełączeniu na drugą organizację, w której użytkownik ma aktualne prawa. Serwer ponownie wiąże uprawniony kontekst; stary kontekst nie uprawnia do odczytu w nowej organizacji. Niezbędna autoryzacja każdej operacji pozostaje automatyczna i aktualna. |
 | Codex | **Maksymalna autonomia wewnątrz osobno uruchomionego etapu**: bez mikrozgód, zbędnych reviewerów i sztucznych bramek; rzeczywiście wymagane owner-only/CI/branch protection nadal obowiązują. |
 | Odbiorcy | Jeden rzeczywiście działający, autoryzowany scenariusz odczytu w Development dla kategorii kosztowej/PCI oraz jeden dla ACG; bez nowych ekranów, bez nieuprawnionych zmian współdzielonego ACG. |
 | Odbiór | Odczyt `READY` całej przyjętej macierzy, automatyczny przyrost Development **przed uzgodnionym po E1 terminem gotowości**, szybki Finder, licencja i izolacja, dwa konsumery, monitoring i recovery. `NO_OP` tylko po potwierdzeniu braku nowego wejścia i dojrzałych celów; wyjątki źródła raportowane oddzielnie. |
+### Aneks Ownera — 23 listopada 2026 r.
+
+**Decyzja DEC-08 · OWNER_APPROVED.** Owner wyłączył z E1, E2 i Business DoD benchmark HWWI Iron Ore & Steel Scrap Index (`hwwi_gb_ironsteel_2021_eur`). Obowiązuje portfel 10 benchmarków wymienionych w §2.2. Owner może zdecydować o dodaniu kolejnego benchmarku po zakończeniu wdrożenia. Obecny zakres i odbiór nie obejmują zamiennika.
+
+**Powód.** Brak potwierdzonej proweniencji miesięcznego HWWI, nierozstrzygnięta licencja i brak właściwych dopuszczeń powodowały nieproporcjonalne opóźnienie. E1 nadal sprawdza dopuszczone semantyki miesięczne z serii dziennych. Zachowano istniejące dane, pierwotną [rewizję Karty 1.0](https://github.com/profitia/SG-dev/blob/b819bcc77b3b7efb2db06c3d630980c4ea47bc01/Canon/proposals/bsdc/SG2/BSDC-20261123-SG2-PRECOMPUTED-FORECASTS.md) oraz historyczne dowody i statusy. Aneks nie przyznaje grantów, kosztów ani zgody na deployment i nie uruchamia E2.
 
 ## 1. Potrzeba biznesowa i granice rozwiązania
 
 Kupiec otwiera Benchmark Finder, wybiera benchmark, model, kadencję/semantykę i horyzont. Powinien **od razu** zobaczyć aktualną, wcześniej przygotowaną prognozę i wiarygodnie sklasyfikowaną informację o jej historycznej sprawdzalności. Przy każdej zmianie wyboru nie może czekać na wieloletni fitting, pełny backtest ani nowe żądanie danych Macrobond. Te same kontrolowane, zapisane wyniki powinny być możliwe do wykorzystania przez funkcję kosztową i ACG, zgodnie z rzeczywistymi uprawnieniami.
 
-**Zakres v1:** 11 instrumentów, modele `naive`, `damped_holt`, `ets`, `arima`; kwalifikowane kombinacje `series × model × cadence × semantics × horizon`; historyczny bootstrap z reuse; per-wariant T0; trwały Current/Verification, nocny przyrost, matured verification, rewizje, odczyt prepared-only w Finderze, dwa konkretne scenariusze konsumpcji i obserwowalna eksploatacja **w Development**.
+**Zakres v1:** 10 instrumentów, modele `naive`, `damped_holt`, `ets`, `arima`; kwalifikowane kombinacje `series × model × cadence × semantics × horizon`, w tym dopuszczone przez resolver semantyki miesięczne prognoz z serii dziennych; historyczny bootstrap z reuse; per-wariant T0; trwały Current/Verification, nocny przyrost, matured verification, rewizje, odczyt prepared-only w Finderze, dwa konkretne scenariusze konsumpcji i obserwowalna eksploatacja **w Development**.
 
-**Wyłączenia:** redesign interfejsu, zmiany matematyki modeli, nowe modele, bezuzasadniona przebudowa Market Data, nowy magazyn/worker/silnik bez dowodu konieczności, masowy onboarding kolejnych serii, zmiany współdzielonego kodu ACG poza właściwym mandatem oraz osobne procesy wydaniowe. Uzgodnione wymaganie nie upoważnia do obchodzenia licencji, Source/E1 ani polityk bezpieczeństwa.
+**Wyłączenia:** redesign interfejsu, zmiany matematyki modeli, nowe modele, bezuzasadniona przebudowa Market Data, nowy magazyn/worker/silnik bez dowodu konieczności, masowy onboarding kolejnych serii, HWWI i dobór jego zamiennika (§0), zmiany współdzielonego kodu ACG poza właściwym mandatem oraz osobne procesy wydaniowe. Uzgodnione wymaganie nie upoważnia do obchodzenia licencji, Source/E1 ani polityk bezpieczeństwa.
 
-**Parametry przyjętej Karty, wymagające wskazanego doprecyzowania w E1:** P95 ≤ 3,0 s od wyboru do wyświetlenia gotowej prognozy i odpowiedniego stanu sprawdzalności. Co najmniej 100 reprezentatywnych pomiarów Development (w tym ≥20 pierwszych wyświetleń po nowej sesji), obejmujących 11 serii, cztery modele i dopuszczone warianty. Dopuszczalny cut-off i termin gotowości nocnej aktualizacji wynikają z lawful publikacji oraz pomiarów E1; **zostaną ustalone i zaakceptowane przy rozliczeniu E1 przed mandatem E2** (w razie potrzeby osobno dla grup serii/kalendarzy). Przed tą decyzją nie ma arbitralnej godziny zobowiązania.
+**Parametry przyjętej Karty, wymagające wskazanego doprecyzowania w E1:** P95 ≤ 3,0 s od wyboru do wyświetlenia gotowej prognozy i odpowiedniego stanu sprawdzalności. Co najmniej 100 reprezentatywnych pomiarów Development (w tym ≥20 pierwszych wyświetleń po nowej sesji), obejmujących 10 serii, cztery modele i dopuszczone warianty. Dopuszczalny cut-off i termin gotowości nocnej aktualizacji wynikają z lawful publikacji oraz pomiarów E1; **zostaną ustalone i zaakceptowane przy rozliczeniu E1 przed mandatem E2** (w razie potrzeby osobno dla grup serii/kalendarzy). Przed tą decyzją nie ma arbitralnej godziny zobowiązania.
 
 ## 2. Fakty, diagnoza, zakres ponownego użycia
 
 ### 2.1. Potwierdzony stan źródłowy i ograniczenia dowodów
+
+**Dowody sprzed aneksu.** Liczby poniżej odnoszą się do pierwotnego portfela i użytych wówczas ról odczytu.
 
 - Obecna konfiguracja portfela PORR zawiera 11 `seriesId`, ale jest **konfiguracją prezentacyjną**, nie źródłem zatwierdzonych biznesowo definicji instrumentów: [`porr-demo-forecast-portfolio.ts`](https://github.com/profitia/SG-dev/blob/main/apps/sg-runtime/lib/benchmark/porr-demo-forecast-portfolio.ts).
 - W kodzie istnieją cztery modele, osiem rozpoznanych częstotliwości (`DAILY`, `WEEKLY`, `MONTHLY`, `BIMONTHLY`, `QUARTERLY`, `QUADMONTHLY`, `SEMIANNUAL`, `ANNUAL`), [resolver możliwości](https://github.com/profitia/SG-dev/blob/main/apps/sg-runtime/lib/forecast/capability-resolver.ts), prepared read, oddzielne ścieżki obliczeń oraz [rolling-daily maintenance](https://github.com/profitia/SG-dev/blob/main/apps/sg-runtime/lib/forecast/rolling-daily-maintenance.ts). Nie każda kombinacja enumeracji jest legalna lub zaimplementowana.
@@ -57,6 +64,8 @@ Kupiec otwiera Benchmark Finder, wybiera benchmark, model, kadencję/semantykę 
 - Rejestr, workflow i stan usługi nie dowodzą automatycznie działającego nocnego cyklu. E1 potwierdza uruchomienie, Source, przyrost, licencję i uprawnienia, a E2 realizuje brakujący zakres na Development.
 
 ### 2.2. Portfel do formalnej kwalifikacji
+
+Bieżący portfel 10 kandydatów po decyzji Ownera w §0.
 
 | # | Oczekiwany instrument biznesowy | Obecny kandydat `seriesId` | Wymagana weryfikacja |
 | --- | --- | --- | --- |
@@ -69,8 +78,7 @@ Kupiec otwiera Benchmark Finder, wybiera benchmark, model, kadencję/semantykę 
 | 7 | LME Copper Cash Seller | `lmeofcucashask` | cash ask/seller, waluta i jednostka |
 | 8 | Copper — continuous | `hg_c1_cl` | zweryfikować rynek; nie utożsamiać automatycznie z LME |
 | 9 | North European HRC futures — front | `ehr2027g_cl` | obecny kandydat opisuje **luty 2027**; sprawdzić front i region |
-| 10 | HWWI Iron Ore & Steel Scrap Index | `hwwi_gb_ironsteel_2021_eur` | **seria miesięczna**; wersja indeksu, data publikacji i zamknięcie okresu |
-| 11 | LME Steel Scrap futures — front | `lmescusd20270226` | obecny kandydat opisuje **luty 2027**; potwierdzić front i serię właściwą |
+| 10 | LME Steel Scrap futures — front | `lmescusd20270226` | obecny kandydat opisuje **luty 2027**; potwierdzić front i serię właściwą |
 
 Wymagany rekord kwalifikacji: biznesowy instrument → provider ID → giełda/rodzaj instrumentu → waluta i jednostka → częstotliwość/semantyka/roll → zgodność licencyjna → ostatnia dostępna obserwacja → pokrycie historii → zgodne modele i horyzonty → decyzja o użyciu. Nie zastępować błędnych ID milcząco. Stare artefakty zachowują pierwotną tożsamość.
 
@@ -115,7 +123,7 @@ Statusy robocze: `USTALONE`, `W_TRAKCIE`, `DO_USTALENIA`, `NIE_DOTYCZY`, `ZABLOK
 | E6 | USTALONE | Roadmapa END-TO-END, zadania, ownerzy, DoD, STOP, rejestr i `FINAL-*` w **tej samej Karcie**. |
 | F1 | USTALONE | Decyzje, fakty, hipotezy, granice i ryzyka w §0, §2 i §6. |
 | F2 | W_TRAKCIE | Karta jest w dopuszczonej lokalizacji SG2; routing i adopcja kontraktów implementacyjnych do ponownej weryfikacji przed mutacją kodu. |
-| F3 | USTALONE | Owner zaakceptował kompletną Kartę 1.0, roadmapę E1–E2 oraz FINAL-01–10; przyjęta rewizja jest utrwalona w authority GitHub. Nie stanowi to mandatu wykonawczego. |
+| F3 | USTALONE | Owner zaakceptował pierwotną Kartę 1.0, roadmapę E1–E2 i FINAL-01–10, a następnie zmianę zakresu w §0. Rewizja bazowa jest wskazana w metryce. Nie stanowi to mandatu wykonawczego. |
 | F4 | USTALONE | Handoff i rejestr etapowy w §5 i §7; bez automatycznej implementacji. |
 
 ## 4. Funkcjonalność i architektura
@@ -166,7 +174,7 @@ profitia/SG-dev @ main
 ├── apps/
 │   ├── sg-runtime/                                     [ISTNIEJE / SG Runtime]
 │   │   ├── lib/benchmark/
-│   │   │   ├── porr-demo-forecast-portfolio.ts         [REUSE / kwalifikacja 11 ID]
+│   │   │   ├── porr-demo-forecast-portfolio.ts         [REUSE / kwalifikacja 10 ID]
 │   │   │   └── analytics-eligibility-handlers.ts        [REUSE/ROZSZERZENIE / bez nowego logowania]
 │   │   ├── lib/market-data/history-runtime.ts           [ISTNIEJE / Source; kontrola legalnej konfiguracji]
 │   │   ├── lib/forecast/
@@ -200,14 +208,14 @@ Wszystkie `FINAL-01–10` muszą być potwierdzone na rzeczywistym SG2 Developme
 
 | ID | Obowiązkowy wynik | Sposób odbioru i dowód |
 | --- | --- | --- |
-| **FINAL-01** | **11 poprawnych instrumentów i `READY` całej przyjętej macierzy.** | Metadane i decyzje o ID. Dla każdej dopuszczonej tożsamości/horyzontu osobno `EXISTS`, status, zgodność, freshness, licencja i autoryzowany readback; przyjęte warianty mają `READY`, a `MISSING/STALE/NOT_PREPARED` **nie zaliczają odbioru**. Wyłączenia tylko przez resolver i przyjętą decyzję zakresową. |
+| **FINAL-01** | **10 poprawnych instrumentów i `READY` całej przyjętej macierzy.** | Metadane i decyzje o ID. Dla każdej dopuszczonej tożsamości/horyzontu osobno `EXISTS`, status, zgodność, freshness, licencja i autoryzowany readback; przyjęte warianty mają `READY`, a `MISSING/STALE/NOT_PREPARED` **nie zaliczają odbioru**. Wyłączenia tylko przez resolver i przyjętą decyzję zakresową. |
 | **FINAL-02** | **Prawidłowy T0, historia i uczciwa sprawdzalność.** | Historia/training origin, wersje wejścia, proveniencja, otwarte i dojrzałe cele. Raport historyczny klasyfikuje strict PIT, reconstructed i prospective. Dla przyjętego okna strict PIT: dowód historycznych wartości i metadanych, transformacji, selekcji parametrów i kalibracji według as-of. Ograniczenia tylko według jawnej polityki Ownera. |
 | **FINAL-03** | **Rzeczywisty, terminowy automatyczny przyrost nocny Development.** | Cut-off danych wejściowych i termin gotowości są mierzalnie ustalone na podstawie E1 i zatwierdzone przy jego rozliczeniu przed E2. E2 dowodzi ich dotrzymania w co najmniej jednym **rzeczywistym, automatycznym** cyklu poza Codespace: nowy lawful origin → przygotowanie i zapis → autoryzowany readback z timestampami publikacji, startu i zakończenia. Dodatkowy cykl lub kontrolowany replay tych samych danych dowodzi idempotencji i `NO_OP` **tylko po potwierdzeniu braku nowej dopuszczalnej obserwacji i dojrzałych celów**. Spóźniona lub brakująca oczekiwana publikacja, błąd/odmowa Source i niepewny wynik są raportowane oddzielnie, bez fałszywego `NO_OP`. Replay miesięcznej weryfikacji nie udaje rzeczywistej historycznej publikacji. T0 i cursory są środowiskowo właściwe dla Development. |
 | **FINAL-04** | **Idempotencja, rewizje, awarie i LKG.** | Dowody przerwania, resume, równoległości, spóźnionego Actual, prefiksowej rewizji, awarii Source i braku nowej publikacji. Zachować opublikowane wartości prognoz, nie przesunąć kursora przez nieukończony zakres, nie przeciekać do innych organizacji. |
-| **FINAL-05** | **Szybki Finder bez interaktywnego compute i dodatkowych potwierdzeń użytkownika.** | Co najmniej 100 prób Development (w tym ≥20 pierwszych po nowej sesji), wszystkie 11 serii, 4 modele i reprezentatywne kadencje; od wyboru do renderu, raport P50/P95, proponowane P95 ≤3 s po akceptacji Ownera. Żadne kliknięcie nie uruchamia fittingu, pełnego backtestu, pobrania Macrobond ani nowego zadania. Przy ważnej sesji zmiany wyborów nie uruchamiają interaktywnych potwierdzeń Clerk/E1; zbędne wywołania identyfikowane i usunięte, konieczna serwerowa autoryzacja zachowana. |
+| **FINAL-05** | **Szybki Finder bez interaktywnego compute i dodatkowych potwierdzeń użytkownika.** | Co najmniej 100 prób Development (w tym ≥20 pierwszych po nowej sesji), wszystkie 10 serii, 4 modele i reprezentatywne kadencje; od wyboru do renderu, raport P50/P95, proponowane P95 ≤3 s po akceptacji Ownera. Żadne kliknięcie nie uruchamia fittingu, pełnego backtestu, pobrania Macrobond ani nowego zadania. Przy ważnej sesji zmiany wyborów nie uruchamiają interaktywnych potwierdzeń Clerk/E1; zbędne wywołania identyfikowane i usunięte, konieczna serwerowa autoryzacja zachowana. |
 | **FINAL-06** | **Jeden działający scenariusz kategorii kosztowej/PCI.** | Właściwy zaakceptowany entrypoint w Development czyta przygotowany wynik z prawidłową walutą, jednostką, okresem, proweniencją i prywatnym kontekstem; obca organizacja/zasób — odmowa. Nie mylić przygotowania kontraktu z rzeczywistą konsumpcją. |
 | **FINAL-07** | **Jeden działający scenariusz ACG.** | Adapter SG Runtime w Development generuje uprawniony, minimalny kontekst i bezpiecznie prezentuje metryki zgodnie z ich klasą PIT; `inputAsOf` nie jest dowodem strict PIT. Test nieuprawnionego podmiotu, niedostępnej serii i obcej organizacji. Zmiana shared ARCHITECTURE nie następuje z mandatu SG2. |
-| **FINAL-08** | **Rozszerzalność portfela.** | Dopuszczona, już licencjonowana seria kontrolna poza początkową jedenastką lub odwracalny non-private fixture przechodzi kwalifikację, Current, Verification i delta bez odrębnego pipeline'u; brak konieczności kupowania nowego źródła wyłącznie do testu. |
+| **FINAL-08** | **Rozszerzalność portfela.** | Już licencjonowana i dopuszczona seria kontrolna spoza portfela 10 benchmarków albo odwracalny fixture bez danych prywatnych przechodzi kwalifikację, Current, Verification i deltę tym samym pipeline’em. Próba nie wykorzystuje HWWI, nie dodaje serii do portfela i nie wymaga zakupu nowego źródła. |
 | **FINAL-09** | **E1, licencja i izolacja przy minimalnym tarciu, także po zmianie organizacji.** | Dla ważnej sesji i praw do nowej organizacji serwer automatycznie weryfikuje jej kontekst i autoryzuje `forecast.read` **bez dodatkowego interaktywnego potwierdzenia**; stary kontekst nie może autoryzować nowej organizacji. Dla braku praw w nowej organizacji, obcego zasobu/roli, cofniętego grantu lub wygasłej sesji następuje odmowa lub rzeczywiście wymagane ponowne uwierzytelnienie; bez ujawnienia danych poprzedniej lub obcej organizacji. Test obejmuje **oba wyniki przełączenia organizacji**, revocation/recency i izolację cache/żądania. Zachować licencję oraz brak niedozwolonych pól w logach/ACG. |
 | **FINAL-10** | **Faktycznie uruchomione i odebrane Development.** | Zgodne SHA, CI, działający runtime i worker, powiązanie właściwego Neon Development, automatyczny job i monitoring, dowody `FINAL-01–09`, pozytywny end-to-end UX, recovery, rzeczywisty szacunek miesięcznego kosztu oraz decyzja Ownera o odbiorze. |
 
@@ -215,34 +223,34 @@ Wszystkie `FINAL-01–10` muszą być potwierdzone na rzeczywistym SG2 Developme
 
 #### E1 — Kwalifikacja, reuse i działający pilot (Development)
 
-**Wynik:** prawidłowo rozpoznane lub jawnie nierozstrzygnięte tożsamości 11 instrumentów; macierz wariantów; przegląd już istniejących artefaktów; reprezentatywny end-to-end pilot **na jednej serii dziennej i jednej miesięcznej**; pomiar kosztu, opóźnień, PIT i liczby zbędnych wywołań Clerk/E1. Ten etap ma dostarczyć pierwszą wartość, **nie tylko dokument audytu**.
+**Wynik:** kwalifikacja 10 instrumentów, macierz wariantów i przegląd istniejących artefaktów; rzeczywisty, reprezentatywny pilot Brent ICE w Finderze Development z Current i Verification, po potwierdzeniu `READY`; dowód działania dopuszczonych semantyk miesięcznych z serii dziennych; pomiar kosztu, opóźnień, PIT i liczby zbędnych wywołań Clerk/E1. Drugi benchmark tylko wtedy, gdy jest konieczny do reprezentatywnego odbioru, i wyłącznie z pozostałej dziewiątki z §2.2.
 
 **Mandat:** wyłącznie po akceptacji PDR/roadmapy i osobnym `URUCHOM ETAP E1` Ownera. Full Autopilot w dozwolonych granicach Dev; specjalny koszt/Source/grant zachowuje osobną, dokładną zgodę, jeśli rzeczywiście wymaganą.
 
 | Task | Zakres / komponenty | Owner / zależności | DoD / wymagany dowód |
 | --- | --- | --- | --- |
-| **E1-T01** | Skwalifikować 11 instrumentów, legalną macierz wariantów oraz istniejące `public`/restricted artefakty. `porr-demo-forecast-portfolio.ts`, resolver, Neon/Source. | SG2 Platform/Market Data + SG Runtime; równolegle z T02. | Macierz 11 ID i owner rozbieżnych definicji; dokładne role/widoki/liczniki; `REUSABLE/STALE/MISSING/WRONG_ID` i gotowość faktycznego readbacku. |
-| **E1-T02** | Sprawdzić skuteczny Development Source → ingest → worker → persist → read; E1/Clerk, harmonogram/role, źródłowy PIT/licencję, entrypointy kategorii i ACG, routing oraz kalendarze publikacji Source. | SG Runtime + Forecast Operations + Source i właściwi owners; równolegle z T01. | Aktualne powiązania Dev, wymagane dopuszczenia, macierz as-of, granice Source/ARCHITECTURE, mapa publikacji i wstępne możliwości terminowe oraz dowód, które wywołania Clerk/E1 są zbędne. Nie wymagać wyniku tej próby przed przyjęciem Karty. |
-| **E1-T03** | Reuse lub mały bootstrap oraz delta dla jednej serii dziennej i jednej miesięcznej (jeżeli właściwy HWWI — preferowany), bez nowych silników. | Forecast + Market Data; po kwalifikacji i dozwolonych dostępach. | Dwa uprawnione Current+Verification, T0, origin, matured/open targets; potwierdzony `NO_OP` wyłącznie przy braku nowego wejścia i należnych celów, kontrolowany replay, rozdział Source failure/late publication i klasyfikacja PIT; rzeczywisty koszt. |
-| **E1-T04** | Odczytać wynik w istniejącym Finderze, zmierzyć UX i koszty zewnętrzne; sprawdzić płynną sesję i zmianę organizacji. | SG Runtime + Dashboard + Forecast Operations; po T03. | Działający pilot UI bez fittingu po kliknięciu i bez nowych interaktywnych potwierdzeń; P50/P95 próby, koszty, liczba wywołań Clerk/E1, testy obu rezultatów przełączenia organizacji. Wynik prób nocnego cut-off i czasu przetwarzania umożliwia ustalenie SLO przy rozliczeniu E1. Dowód exact SHA/Neon Dev. |
+| **E1-T01** | Skwalifikować 10 instrumentów, legalną macierz wariantów oraz istniejące `public`/restricted artefakty. `porr-demo-forecast-portfolio.ts`, resolver, Neon/Source. | SG2 Platform/Market Data + SG Runtime; równolegle z T02. | Macierz 10 ID i owner rozbieżnych definicji; dokładne role/widoki/liczniki; `REUSABLE/STALE/MISSING/WRONG_ID` i gotowość faktycznego readbacku. |
+| **E1-T02** | Sprawdzić dla portfela po aneksie skuteczny przepływ Development Source → ingest → worker → persist → read; E1/Clerk, harmonogram/role, źródłowy PIT/licencję, entrypointy kategorii i ACG, routing oraz kalendarze publikacji Source. | SG Runtime + Forecast Operations + Source i właściwi owners; równolegle z T01. | Aktualne powiązania Dev, wymagane dopuszczenia, macierz as-of, granice Source/ARCHITECTURE, mapa publikacji i wstępne możliwości terminowe oraz dowód, które wywołania Clerk/E1 są zbędne. Nie wymagać wyniku tej próby przed przyjęciem Karty. |
+| **E1-T03** | Zweryfikować reuse dziennego Brent ICE; uzupełnić wyłącznie dozwolone braki potrzebne do pilota. Przetestować dopuszczone przez resolver miesięczne semantyki prognoz z serii dziennych. Drugi benchmark wykorzystać tylko przy konieczności reprezentatywnego odbioru, z pozostałej dziewiątki w §2.2. | Forecast + Market Data; po kwalifikacji i dozwolonych dostępach. | Autoryzowany Current i Verification dla pilota, T0, origin, dojrzałe i otwarte cele, proweniencja i klasyfikacja PIT; dowód testu miesięcznych semantyk; delta, kontrolowany replay i idempotencja. `NO_OP` tylko przy braku nowego wejścia i należnych celów; osobno błędy Source i spóźnione publikacje; rzeczywisty koszt. |
+| **E1-T04** | Odczytać wynik w istniejącym Finderze, zmierzyć UX i koszty zewnętrzne; sprawdzić płynną sesję i zmianę organizacji. | SG Runtime + Dashboard + Forecast Operations; po T03. | Działający pilot z autoryzowanym renderem Current i Verification, bez fittingu, backtestu lub pobrania Source po kliknięciu i bez zbędnych potwierdzeń; P50/P95 od wyboru do renderu, koszty i liczba wywołań Clerk/E1; oba wyniki przełączenia organizacji, wygaśnięcie sesji, cofnięcie dostępu oraz izolacja starego kontekstu, cache i żądań w toku. Wynik prób nocnego cut-off i czasu przetwarzania umożliwia ustalenie SLO przy rozliczeniu E1. Dowód exact SHA/Neon Dev. |
 
-**DoD E1:** dwa realne, prawidłowo zakwalifikowane wyniki i odczyty w Development; wiarygodny status wszystkich 11 instrumentów; zakres reuse/braków; koszty i luki; wiarygodny plan domknięcia E2. **Przy rozliczeniu E1 Owner przyjmuje wynikający z pomiarów cut-off i termin gotowości danych/wyników, stosowne do kalendarzy serii, albo jawnie rozstrzyga ograniczenie.** Nie wymaga się znajomości tych godzin przed próbą E1. Jeżeli źródło, licencja lub PIT uniemożliwia przyjęte wymaganie, zachować `CZĘŚCIOWY` lub `ZABLOKOWANY` i przed E2 uzyskać odpowiednią decyzję Ownera. Nie udawać wykonania reszty portfela.
+**DoD E1:** działający pilot z autoryzowanym Current i Verification w Finderze Development; testy dopuszczonych miesięcznych semantyk z serii dziennych; udokumentowane wykonanie delty i replay oraz testy UI, izolacji i wydajności z T04; wiarygodny status wszystkich 10 instrumentów; zakres reuse/braków; koszty i luki; wiarygodny plan domknięcia E2. **Przy rozliczeniu E1 Owner przyjmuje wynikający z pomiarów cut-off i termin gotowości danych/wyników, stosowne do kalendarzy serii, albo jawnie rozstrzyga ograniczenie.** Nie wymaga się znajomości tych godzin przed próbą E1. Jeżeli źródło, licencja lub PIT uniemożliwia przyjęte wymaganie, zachować `CZĘŚCIOWY` lub `ZABLOKOWANY` i przed E2 uzyskać odpowiednią decyzję Ownera. Nie udawać wykonania reszty portfela.
 
 #### E2 — Kompletny produkt, automatyzacja i odbiór END-TO-END (Development)
 
-**Wynik:** pełna zaakceptowana macierz `READY`, trwałe Current/Verification, naturalny przyrost poza ścieżką użytkownika, płynny przygotowany odczyt w Finderze, działający konsument kosztowy i ACG, monitoring i **kompletny odbiór FINAL-01–10 w Development**.
+**Wynik:** pełna zaakceptowana macierz 10 benchmarków `READY`, trwałe Current/Verification, naturalny przyrost poza ścieżką użytkownika, płynny przygotowany odczyt w Finderze, działający konsument kosztowy i ACG, monitoring i **kompletny odbiór FINAL-01–10 w Development**.
 
 **Mandat:** dopiero po rozliczeniu E1 i osobnym `URUCHOM ETAP E2`. Codex wykonuje wszystkie dozwolone taski E2 autonomicznie, również zwykłe zmiany kodu, testy, CI, commit/push/PR, dozwolony merge oraz autoryzowane uruchomienie Development; bez ponownych pytań o rutynowe kroki. Bez przejścia na inne środowiska i bez działań poza rzeczywistą właściwością SG2. Istotne nowe koszty/granty/własność wymagają właściwego rozstrzygnięcia; zadania niezależne trwają dalej.
 
 | Task | Zakres / komponenty | Owner / zależności | DoD / wymagany dowód |
 | --- | --- | --- | --- |
-| **E2-T01** | Domknąć portfel 11 serii, pełny reuse + uzupełniający bootstrap i T0, dojrzałe/otwarte Verification, klasyfikację PIT. | Forecast Runtime + Market Data; po E1 i akceptacji ewentualnych zmian portfela/PIT. | `READY` dla każdego przyjętego wariantu w realnym odczycie; dokładne liczniki, identity, freshness, provenance, PIT i brak niezapisanych braków. `FINAL-01/02`. |
+| **E2-T01** | Domknąć portfel 10 serii, pełny reuse + uzupełniający bootstrap i T0, dojrzałe/otwarte Verification, klasyfikację PIT. | Forecast Runtime + Market Data; po E1 i akceptacji ewentualnych zmian portfela/PIT. | `READY` dla każdego przyjętego wariantu w realnym odczycie; dokładne liczniki, identity, freshness, provenance, PIT i brak niezapisanych braków. `FINAL-01/02`. |
 | **E2-T02** | Przyrostowy koordynator, rzeczywisty nocny scheduler i trwałe uruchomienie Development; retry, rewizja, prawidłowy `NO_OP`, telemetry. | Forecast Operations + SG Runtime; logika może powstawać równolegle z T01, aktywacja portfela po gotowym T01. | Wykazany automatyczny lawful przyrost i readback **przed zatwierdzonym po E1 terminem gotowości**, z datami/czasami i rozdzieleniem braku pracy od problemu Source; replay no-op tylko przy potwierdzonym zerowym przyroście i braku matured targets, kontrolowane awarie, spójny cursor, monitoring/recovery, koszt. `FINAL-03/04/08`. |
-| **E2-T03** | Prepared-only Finder oraz brak ponownych interaktywnych wywołań Clerk/E1 w normalnej sesji, także po uprawnionym przełączeniu organizacji; zaufany kontekst bezpiecznie reuse. | SG Runtime + Dashboard; równolegle z T02 po rozpoznaniu źródła w E1. | Istniejący UX, brak fittingu i dodatkowego logowania, pomiary P95, prawidłowe stany braków i odmów, oba rezultaty zmiany organizacji, weryfikacja odrzucenia starego kontekstu/cache i test revocation. `FINAL-05/09`. |
+| **E2-T03** | Prepared-only Finder oraz brak ponownych interaktywnych wywołań Clerk/E1 w normalnej sesji, także po uprawnionym przełączeniu organizacji; zaufany kontekst bezpiecznie reuse. | SG Runtime + Dashboard; równolegle z T02 po rozpoznaniu źródła w E1. | Istniejący UX, brak fittingu i dodatkowego logowania, pomiary P50/P95 dla portfela 10 instrumentów według FINAL-05, prawidłowe stany braków i odmów, oba rezultaty zmiany organizacji, weryfikacja odrzucenia starego kontekstu/cache i test revocation. `FINAL-05/09`. |
 | **E2-T04** | Dwa konkretne przypadki konsumpcji przygotowanego Forecast w kategorii kosztowej/PCI i ACG. | SG Runtime + właściwi consumer owners; E1 wybiera entrypoint, test po gotowym T01. | Dwa rzeczywiste autoryzowane scenariusze, prawidłowe jednostki/okres, licencja/tenant i PIT, odmowy obcych organizacji; bez niezleconych zmian shared ACG. `FINAL-06/07/09`. |
 | **E2-T05** | Pełna integracja i odbiór Development, monitoring, koszt, restart/recovery, rejestr finalnych dowodów. | SG Runtime + Forecast Operations + Owner SG2; po T01–T04. | Działający end-to-end Dev, wszystkie `FINAL-01–10` z rzeczywistymi dowodami; brak dodatkowego recenzenta tylko „dla pewności”; właściwe PR/SHA/CI/run, raport kosztu, niezamknięte braki i jednoznaczna decyzja Ownera o odbiorze. |
 
-**DoD E2:** wszystkie `FINAL-01–10` mają status `ZAKOŃCZONY` i dowody z Development; rzeczywisty codzienny proces pracuje bez Codespace, a użytkownik korzysta z Findera bez dodatkowego potwierdzania tożsamości. Brak któregokolwiek obowiązującego kryterium oznacza `CZĘŚCIOWY` lub `ZABLOKOWANY`, nie fikcyjny sukces.
+**DoD E2:** wszystkie `FINAL-01–10` dla portfela 10 instrumentów mają status `ZAKOŃCZONY` i dowody z Development; rzeczywisty codzienny proces pracuje bez Codespace, a użytkownik korzysta z Findera bez dodatkowego potwierdzania tożsamości. Brak któregokolwiek obowiązującego kryterium oznacza `CZĘŚCIOWY` lub `ZABLOKOWANY`, nie fikcyjny sukces.
 
 ### 5.3. Autonomia, kolejność, prawa i STOP
 
@@ -259,21 +267,63 @@ Wszystkie `FINAL-01–10` muszą być potwierdzone na rzeczywistym SG2 Developme
 
 Statusy etapów i tasków: `NIE_ROZPOCZĘTY`, `W_TOKU`, `CZĘŚCIOWY`, `ZABLOKOWANY`, `ZAKOŃCZONY`.
 
+Statusy i dowody poniżej pochodzą z rozliczenia sprzed aneksu. Kolumna następnych działań uwzględnia zakres 10 benchmarków. Status E1 i jego zadań może się zmienić po nowej weryfikacji DoD.
+
 | ID | Owner / miejsce | Status | Daty; taskId; PR/SHA/CI/run/test | Dowód rzeczywisty | Brak / następny krok |
 | --- | --- | --- | --- | --- | --- |
-| E1 | SG2 · Development | NIE_ROZPOCZĘTY | — | — | Brak osobnego mandatu `URUCHOM ETAP E1` |
-| E1-T01 | SG2 Platform + Forecast | NIE_ROZPOCZĘTY | — | — | Zweryfikować 11 ID i artefakty |
-| E1-T02 | SG Runtime + Source + Forecast Ops | NIE_ROZPOCZĘTY | — | — | Sprawdzić Dev runtime, Clerk/E1 i entrypointy |
-| E1-T03 | Forecast + Market Data | NIE_ROZPOCZĘTY | — | — | Dwa pilotażowe warianty |
-| E1-T04 | SG Runtime + Dashboard | NIE_ROZPOCZĘTY | — | — | Działający UI i pomiary |
+| E1 | SG2 · Development | CZĘŚCIOWY | 2026-11-23 · SG2-BSDC-PRECOMPUTED-FORECASTS-E1-20261123 | Dzienny Brent ICE działa w chronionym odczycie. Miesięczne HWWI wymaga proweniencji Source i dopuszczenia producenta. | Wznowić od odczytu Brent ICE według punktu wznowienia po aneksie. |
+| E1-T01 | SG2 Platform + Forecast | CZĘŚCIOWY | 2026-11-23 · odczyt Neon Development | Zidentyfikowano 11 kandydatów, 3 niedopasowane kontrakty fixed i zapisane artefakty. Liczba wierszy public: 234 Current, 271 Verification, 95 Rolling Daily. | Domknąć kwalifikację portfela 10 benchmarków, decyzje o odpowiednikach, licencje i dowody PIT. |
+| E1-T02 | SG Runtime + Source + Forecast Ops | CZĘŚCIOWY | 2026-11-23 · runtime 2712ff7718e1ee8f6478df08f7eef41ee84c5be9 | Powiązania Development, historyczne wykonania workerów, odczyt SG Runtime, ścieżki PCI i ACG oraz wygaśnięcie grantów kolejki i workera potwierdzone. | Potwierdzić kalendarze i licencje dla pozostałego portfela. Doprecyzować grant oraz limit tylko dla potrzebnych nowych operacji. |
+| E1-T03 | Forecast + Market Data | ZABLOKOWANY | 2026-11-23 · Brent ICE b_c1_cl i HWWI hwwi_gb_ironsteel_2021_eur | Brent ICE, model naive, Current i Verification AVAILABLE dla danych do 18.11.2026. HWWI zwraca NOT_AVAILABLE mimo zapisanych przebiegów. | Ponownie zweryfikować dzienny Brent ICE i dopuszczone wersje miesięczne z serii dziennych; wykonać niezbędną deltę i replay w dozwolonym zakresie. |
+| E1-T04 | SG Runtime + Dashboard | CZĘŚCIOWY | 2026-11-23 · Finder Development i zabezpieczone GET | Sesja otwiera Finder bez dodatkowego potwierdzenia. Brent ICE dostępny w API, obcy kontekst testowy i brak sesji bez zwrócenia danych. | Sprawdzić render pilota i semantyki miesięczne, zmierzyć wydajność UI oraz wykonać testy przełączenia organizacji i cofnięcia dostępu. |
 | E2 | SG2 · Development | NIE_ROZPOCZĘTY | — | — | Wymaga rozliczenia E1 i osobnego mandatu |
-| E2-T01 | Forecast + Market Data | NIE_ROZPOCZĘTY | — | — | Pełna macierz i T0 |
+| E2-T01 | Forecast + Market Data | NIE_ROZPOCZĘTY | — | — | Pełna macierz 10 benchmarków i T0 |
 | E2-T02 | Forecast Operations | NIE_ROZPOCZĘTY | — | — | Automatyczny cykl Dev |
 | E2-T03 | SG Runtime + Dashboard | NIE_ROZPOCZĘTY | — | — | Prepared UI i płynna sesja |
 | E2-T04 | SG Runtime + owners konsumentów | NIE_ROZPOCZĘTY | — | — | Dwa autoryzowane odczyty |
 | E2-T05 | SG2 + Owner | NIE_ROZPOCZĘTY | — | — | Wszystkie FINAL i realny odbiór |
 
-**Bieżący mandat:** `BRAK`. **Ostatnie rozliczenie etapu:** `N/D`. **Decyzja o starcie następnego etapu:** `BRAK`. Aktualizacje tego rejestru następują po formalnym zapisie PDR i legalnym uruchomieniu prac. Dowód `ZAKOŃCZONY` = realny wynik na odpowiednim SHA i Development, nie tylko PR/CI.
+**Bieżący mandat:** wyłącznie E1, dyspozycja Ownera z 23.11.2026. **Ostatnie rozliczenie etapu:** CZĘŚCIOWY. **Decyzja o starcie E2:** BRAK. Aneks aktualizuje zakres E1 w granicach dotychczasowego mandatu.
+
+**Punkt wznowienia E1.** Zacząć od kwalifikacji zapisanego Current i Verification Brent ICE dla kadencji dziennej oraz dopuszczonych wariantów miesięcznych z wejść dziennych. Potwierdzić zgodność fingerprintu, aktualność danych, licencję i autoryzowany odczyt. W Finderze Development wykonać rzeczywisty render, pomiar od wyboru do wyświetlenia oraz testy sesji, organizacji i cofnięcia uprawnień. Deltę i replay wykonać w granicach ważnych uprawnień. Drugi benchmark z §2.2 wykorzystać tylko wtedy, gdy jest potrzebny do odbioru.
+
+**Wnioski Source/Forecast po aneksie.** Pozycje z [PR #1310](https://github.com/profitia/SG-dev/pull/1310) dotyczące wyłącznie HWWI (proweniencja okresu, publikacja, licencja, płatne pobranie i przygotowanie) nie są już wymaganiami projektu. Dla pozostałych benchmarków odnowienie kolejki lub workera pozostaje potrzebne, jeśli odtwarzanie i wymagane testy delty wymagają nowego przebiegu. Wniosek kieruje się do właściwego operatora z minimalnym zakresem. Source włącza się do wykonania tylko wtedy, gdy dozwolony lokalny materiał nie wystarcza, po sprawdzeniu licencji i budżetu. Wspólne uprawnienia i zadania innych funkcji pozostają w użyciu przez ich właścicieli.
+
+**Dowody E1.** Zabezpieczony odczyt dzienny Brent ICE / naive: 5 prób Current, P50/P95 0,79/1,59 s oraz 5 prób Verification, P50/P95 3,19/3,30 s. To czasy odczytów API w przeglądarce. Pomiar od wyboru do renderu Findera czeka na pełny pilot. Historyczne targety dojrzałe i otwarte są dostępne w Neon. Etykieta POINT_IN_TIME opisuje metodę targetu. Dowód vintage w historycznym momencie decyzji nie jest dostępny w użytej projekcji. Zadanie PMOS: SG2-BSDC-PRECOMPUTED-FORECASTS-E1-20261123.
+
+#### Kontynuacja E1 po DEC-08 — 23.11.2026
+
+Powiązanie z [historycznym rozliczeniem E1](https://github.com/profitia/SG-dev/pull/1310) i zatwierdzonym [aneksem DEC-08](https://github.com/profitia/SG-dev/pull/1311). Zadanie PMOS kontynuacji `SG2-BSDC-PRECOMPUTED-FORECASTS-E1-DEC08-20261123`. Ostatni stan E1 pozostaje **CZĘŚCIOWY**. Statusy poniżej wynikają z nowych dowodów. E2 pozostaje `NIE_ROZPOCZĘTY`.
+
+| Zadanie | Aktualny status | Nowy dowód i pozostały krok |
+| --- | --- | --- |
+| E1-T01 | CZĘŚCIOWY | Potwierdzono odczyt projekcji źródłowej i istnienie artefaktów dla 10 ID. Trzy fixed/front w DEC-02, aktualność, licencja i zgodność całej macierzy pozostają do rozstrzygnięcia. |
+| E1-T02 | CZĘŚCIOWY | Odczytano aktualne wersje runtime i dashboardu, status ograniczonych grantów oraz trasę autoryzowanej analityki. Potrzebny operator Forecast dla ograniczonego przebiegu i dowód uprawnień do wykorzystania wejścia. |
+| E1-T03 | ZABLOKOWANY | Dzienny snapshot potwierdzony dla wejścia z 18.11.2026. Warianty miesięczne z dziennych danych mają origin z sierpnia. Nowy działający cykl Development pozostaje zależny od ważnych grantów kolejki i workera. |
+| E1-T04 | CZĘŚCIOWY | Finder otwiera się w aktywnej sesji. Wyszukiwanie `b_c1_cl` zwróciło komunikat o niedostępności. Poprawka odczytu zapisanego Brent ICE w [PR #1312](https://github.com/profitia/SG-dev/pull/1312) przeszła 10 lokalnych testów transportu Findera i pickera oraz parsowanie TSX. 26 osobnych testów kadencji i historii potwierdza obie semantyki miesięczne na lokalnych danych testowych. Potrzebne kontrolowane CI, wydanie i rzeczywisty odbiór. |
+
+**Macierz kwalifikacji**. Wszystkie serie w projekcji mają wejście dzienne. Daty poniżej są ostatnimi obserwacjami *w lokalnym źródle*, a liczniki obejmują zapisane rekordy ze statusem `AVAILABLE` (Current / Verification / Rolling Daily). Autoryzacja, świeżość i kwalifikacja wariantu są wymagane osobno do `READY`.
+
+| ID | Potwierdzenie z danych Development | Ostatnia obserwacja | Zapisane C / V / RD |
+| --- | --- | --- | --- |
+| `b_c1_cl` | ICE Brent Crude, pierwsza pozycja, USD/bbl | 18.11.2026 | 18 / 26 / 15 |
+| `cl_c1_cl` | CME WTI Physical, pierwsza pozycja, USD/bbl | 18.11.2026 | 24 / 24 / 12 |
+| `wocaes0074` | Brent Spot FOB North Sea, USD/bbl | 23.09.2026 | 56 / 57 / 11 |
+| `bz_c1_cl` | CME Brent Last Day, pierwsza pozycja, USD/bbl. Metodologia roll wymaga potwierdzenia. | 18.09.2026 | 18 / 16 / 8 |
+| `qm_c1_cl` | NYMEX E-mini, pierwsza pozycja, USD/bbl. Metodologia roll wymaga potwierdzenia. | 18.09.2026 | 16 / 18 / 8 |
+| `hg2027g_cl` | CME Copper, 24.02.2027, USD/lb. Rozbieżność z LME/front. | 21.09.2026 | 16 / 24 / 9 |
+| `lmeofcucashask` | LME Copper Cash Seller & Settlement, USD/t | 17.09.2026 | 30 / 44 / 8 |
+| `hg_c1_cl` | CME Copper, pierwsza pozycja, USD/lb. Metodologia continuous wymaga potwierdzenia. | 23.09.2026 | 16 / 24 / 8 |
+| `ehr2027g_cl` | CME North European HRC, 26.02.2027, EUR/t. Kontrakt fixed. | 18.09.2026 | 16 / 10 / 8 |
+| `lmescusd20270226` | LME Steel Scrap CFR Turkey, 26.02.2027, USD/t. Kontrakt fixed. | 18.09.2026 | 16 / 16 / 8 |
+
+**Brent ICE / naive.** Odczyt Neon potwierdził T0 01.01.2024, pierwszy rzeczywisty origin 02.01.2024, ostatni origin 18.11.2026, 2501 dojrzałych i 479 otwartych weryfikacji. Fingerprint zapisanego dziennego snapshotu zaczyna się od `d0b8fbcbef22`. Dla dziennego wejścia i miesięcznego celu zapisano `END_OF_PERIOD` i `MONTHLY_AVERAGE` z origin 01.08.2026. Do odbioru potrzebny jest aktualny autoryzowany render oraz potwierdzenie proweniencji i świeżości. Bieżąca projekcja nie wykazuje historycznej dostępności vintage, a `POINT_IN_TIME` oznacza semantykę targetu. Izolowane próby nowej obserwacji, dojrzewania i replay: 2 testy PASS (6 subtestów). Brak nowego dopuszczonego przebiegu Development. Granty producenta wygasły 19.11.2026 i w sprawdzonym zakresie nie ma czynnego grantu dostawcy. W tej kontynuacji brak płatnego wywołania zainicjowanego w celu przygotowania danych.
+
+**Runtime i pomiary.** Sprawdzone live: SG Runtime `2712ff7718e1ee8f6478df08f7eef41ee84c5be9`, Render `dep-dc1v9gec6qcc73bve4l0`. Kandydat Findera `66977cf620ec4a75937748c19ddf6ae7554bed5b`. Historyczne czasy API pozostają podane wyżej. Brak nowej próby od wyboru do renderu, zatem P50/P95 UI, liczba wywołań Clerk/E1, przełączenie dwóch organizacji i revocation end-to-end pozostają otwarte. Sesja otworzyła Finder bez dodatkowego interaktywnego logowania. Dowody lokalne i dane Development nie zastępują odbioru UI.
+
+**DEC-02–DEC-06.** DEC-02: rozstrzygnąć trzy dopasowania fixed/front, w tym giełdę LME dla miedzi. DEC-03: używać klasy reconstructed lub prospective zgodnie z dowodami do uzyskania potwierdzonych historycznych wersji wejść. DEC-04: istniejące PCI i ACG pozostają trasami do kwalifikacji, a ten przebieg nie dowodzi ich aktualnej konsumpcji. DEC-05: odroczyć zatwierdzenie P95, cut-off, gotowości i kosztu do rzeczywistego pomiaru. DEC-06: najpierw potwierdzić uprawnienie do obliczeń i publikacji z istniejącego wejścia. Ograniczony przebieg z dozwolonych lokalnych danych pozostaje do koordynacji przez uprawnionego operatora Forecast Operations. Dostarczenia wniosku i odnowienia grantów nie potwierdzono. Ustalenia z Ownerem prowadzić w aktywnej rozmowie. Odczyt potwierdził wygaśnięcie okien technicznych budżetów kolejki, workera i dostawcy. To polityki wewnętrzne Source, niezależne od limitu u Macrobond.
+
+**Najbliższy krok.** Owner dopuścił źródłowy commit PR #1312 do kontrolowanego CI. [PR #1313](https://github.com/profitia/SG-dev/pull/1313) zawiera 24-godzinny wpis dopuszczenia. Jego publikacja podlega bramce governance. Przed późniejszym wydaniem sprawdzić wynik kontrolowanego CI, zasób Development, LKG i decyzję Ownera. Operator Forecast Operations może po potwierdzeniu licencji czasowo dopuścić jedną ograniczoną próbę delty i replay na zapisanych danych Brent ICE. Następnie wykonać render oraz pomiary E1. Status E2 pozostaje niezależny.
 
 ### 5.5. Końcowy scenariusz odbioru
 
@@ -297,28 +347,29 @@ Uprawniony użytkownik z aktywną sesją otwiera istniejący Benchmark Finder **
 | ID | Temat | Status/decyzja Ownera i moment technicznej weryfikacji |
 | --- | --- | --- |
 | DEC-01 | Zakres środowiskowy | **USTALONE przez Ownera: DEVELOPMENT ONLY.** Nie rozszerzać ani listy tasków, ani odbioru poza Development. |
-| DEC-02 | 11 biznesowych instrumentów i ich odpowiedniki | **Reguła:** nie zamieniać fixed na front ani giełdy bez jawnej decyzji. E1 uzyskuje metadane i wskazuje dokładne rozbieżności, a Owner rozstrzyga przed E2, jeśli dotyczą zakresu. |
+| DEC-02 | 10 biznesowych instrumentów i ich odpowiedniki | **Reguła:** nie zamieniać fixed na front ani giełdy bez jawnej decyzji. E1 uzyskuje metadane i wskazuje dokładne rozbieżności, a Owner rozstrzyga przed E2, jeśli dotyczą zakresu. |
 | DEC-03 | Minimalne okno i pokrycie strict PIT | **DO DECYZJI OWNERA** dla docelowego DoD: określić wymaganą regułę albo warunkowy próg z jawną ścieżką rozstrzygnięcia po E1. Nie żądać historycznego dowodu przed wykonaniem E1. |
 | DEC-04 | Dwa scenariusze konsumpcji | **DO AKCEPTACJI OWNERA:** jeden scenariusz kategorii kosztowej/PCI, jeden ACG. Techniczny entrypoint, owner, licencja i projekcja wynikają z E1. Niemożliwość w granicy SG2 wymaga jawnej decyzji przed E2. |
 | DEC-05 | P95, cut-off, termin gotowości, koszty | **DO AKCEPTACJI OWNERA:** proponowane P95 ≤ 3 s i reprezentatywna próba ≥100, mierzenie od wyboru do renderu. **Przy rozliczeniu E1, na podstawie publikacji lawful i pomiarów, zatwierdzić mierzalny cut-off oraz termin gotowości wyników (w razie potrzeby per kalendarz/grupa serii) jako warunek E2 i FINAL-03.** Bez arbitralnej godziny przed E1. Faktyczne koszty cyklu i dalsze granice autoryzować według uprawnień. |
 | DEC-06 | Legalność użycia i Source/vintages | W E1 zweryfikować realne licencje/granty na pobranie i pochodne dla obu odbiorców, publikację i przekazanie do AI. Nowy grant/zasób wymaga rzeczywistego upoważnienia właściwego właściciela. |
 | DEC-07 | Brak tarcia i autonomia | **USTALONE co do celu Ownera:** zwykła praca w Finderze bez kolejnych interaktywnych potwierdzeń E1/Clerk; wykonanie etapów przez Codexa bez mikrozgód, dodatkowego human review i powtórzeń zgód, z zachowaniem realnych obowiązkowych autoryzacji. E1 mierzy obecny stan, E2 domyka i dowodzi. |
+| DEC-08 | Wyłączenie HWWI | **ZATWIERDZONE 23.11.2026:** 10 benchmarków w E1, E2 i FINAL. Bez zamiennika w bieżącym projekcie. Dowody sprzed zmiany pozostają w §2.1 i §5.4. |
 
-**Ryzyka:** błędna tożsamość serii może dać sprawnie działającą, ale nieprawidłową prognozę; niepełne vintages może uniemożliwić przyjęty standard PIT; okresowe weryfikacje mogą wymagać dodatkowego trwałego śladu ich faktycznej publikacji; wycofanie uprawnień nie może być przykryte cache; wspólne właścicielstwo ACG nie może być ominięte; pełny bootstrap może być kosztowny lub wejść w konflikt z równoległymi zmianami Forecast. Mitigacja: rzeczywista próba E1, wersjonowana macierz, wąskie rozszerzenia istniejących komponentów, zamknięcie istotnych rozbieżności przed E2, bez fikcyjnych statusów.
+**Ryzyka:** błędna tożsamość serii może dać sprawnie działającą, ale nieprawidłową prognozę; niepełne vintages może uniemożliwić przyjęty standard PIT; okresowe weryfikacje mogą wymagać dodatkowego trwałego śladu ich faktycznej publikacji; wycofanie uprawnień nie może być przykryte cache; wspólne właścicielstwo ACG nie może być ominięte; pełny bootstrap może być kosztowny lub wejść w konflikt z równoległymi zmianami Forecast. Wygaśnięte granty producenta i licencja Source pozostają ryzykiem tylko dla koniecznych operacji na portfelu po aneksie. Mitigacja: rzeczywista próba E1, wersjonowana macierz, wąskie rozszerzenia istniejących komponentów, zamknięcie istotnych rozbieżności przed E2, bez fikcyjnych statusów.
 
 **Estymacja:** `DO_OSZACOWANIA` po E1. Wymagany pomiar faktycznego kosztu i czasu brakujących wariantów, wielkości historii, liczby licencjonowanych zapytań, czasu cyklu i pamięci, składowania w Neon, P50/P95 UI. Wskaźniki kosztowe nie uprawniają do tworzenia zasobów; jeśli brakuje budżetu, zatrzymać tylko odpowiednią operację, kontynuować prace niezależne.
 
 ## 7. Punkt wznowienia / zgodność z governance
 
-To jest **centralna Karta Projektu BSDC 1.0**, zaakceptowana przez Ownera jako jedna baza projektu, roadmapy E1–E2, checklisty A–F, rejestru wykonania i `FINAL-01–10`. Zgodnie z [Launcherem BSDC v1.1](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/bsdc-launcher-v1.1.md) przy wznowieniu należy odczytać najnowszą rewizję tej samej Karty na GitHubie. **Nie tworzyć duplikatu.** Akceptacja i publikacja nie uruchamiają E1. Osobno `URUCHOM ETAP E1`; po jego rozliczeniu i decyzjach wskazanych dla E1 dopiero osobny mandat `URUCHOM ETAP E2`. E2 kończy się działającym, odebranym Development; inne środowiska nie są warunkiem odbioru. Przyjęta baza projektu i roadmapy nie zmienia się bez jawnej decyzji Ownera; rejestr wykonania i dowody aktualizuje się w tej samej Karcie.
+To jest **centralna Karta Projektu BSDC 1.0**, zaakceptowana przez Ownera jako jedna baza projektu, roadmapy E1–E2, checklisty A–F, rejestru wykonania i `FINAL-01–10`. Zgodnie z [Launcherem BSDC v1.1](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/bsdc-launcher-v1.1.md) przy wznowieniu należy odczytać najnowszą rewizję tej samej Karty na GitHubie. **Nie tworzyć duplikatu.** E1 rozpoczęto na wcześniejszy jawny mandat. Po jego rozliczeniu i wskazanych decyzjach Ownera uruchomienie E2 wymaga osobnego mandatu `URUCHOM ETAP E2`. E2 kończy się działającym, odebranym Development; inne środowiska nie są warunkiem odbioru. Przyjęta baza projektu i roadmapy nie zmienia się bez jawnej decyzji Ownera; rejestr wykonania i dowody aktualizuje się w tej samej Karcie.
 
-**Status A–F:** A — projekt i decyzje metryczne; B — analiza reuse, fakty do weryfikacji E1; C — scenariusze i UX; D — routing i właściciele do preflight; E — kompletna roadmapa 2-etapowa z 9 taskami; F — projekt i roadmapa 1.0 zatwierdzone przez Ownera; wykonanie wymaga osobnego mandatu.
+**Status A–F:** A — projekt i decyzje metryczne; B — analiza reuse, fakty do weryfikacji E1; C — scenariusze i UX; D — routing i właściciele do preflight; E — kompletna roadmapa 2-etapowa z 9 taskami; F — pierwotna Karta 1.0 i aneks zakresu zatwierdzone przez Ownera; obowiązuje etapowy mandat wykonawczy z §5.4.
 
-**Ostatnia decyzja:** Owner przyjął Kartę 1.0 w zakresie **wyłącznie Development**, łącznie z dwoma etapami, 9 zadaniami, 10 kryteriami FINAL oraz zasadą maksymalnej płynności użytkowania i wykonania. Podstawą jest uzgodniona v0.5 po Cross-Model Review. **Następny krok:** przegląd pozostających decyzji biznesowych i warunków E1, a następnie **osobna dyspozycja Ownera `URUCHOM ETAP E1`**. Bez działań wykonawczych przed mandatem; otwarte szczegóły wskazane w DEC-02–06 rozstrzygać we właściwych momentach roadmapy, nie traktować jako już dowiedzionych.
+**Ostatnia decyzja Ownera (23.11.2026):** DEC-08 wyłącza HWWI i ustala portfel 10 benchmarków dla E1–E2 oraz FINAL-01–10 w SG2 Development. **Następny krok:** wznowić rzeczywistą weryfikację E1 od Brent ICE według §5.4 i rozliczyć pozostałe wymagania. Następnie przedstawić Ownerowi DEC-02–DEC-06. E2 jest `NIE_ROZPOCZĘTY` i wymaga osobnego mandatu.
 
 ### Dedykowany Codespace — metadane operacyjne
 
-**Przestrzeń wskazana przez Ownera (23.11.2026):** [SG2 Precomputed Forecasts — Codespace](https://improved-zebra-r4jj9q55w56jcx9wx.github.dev/). Dedykowana tej inicjatywie do przyszłej realizacji etapów E1–E2 w SG2 Development. Wskazanie przestrzeni nie dowodzi aktualnej konfiguracji repozytorium, uprawnień GitHub/PHR ani poprawnego uwierzytelnienia i nie stanowi mandatu wykonawczego. Faktyczne powiązanie i dostęp wymagają sprawdzenia przy zwykłym preflight uruchamianego etapu. Wpis jest wyłącznie aktualizacją metadanych operacyjnych; zaakceptowana podstawa projektu, roadmapa i FINAL-01–10 pozostają niezmienione.
+**Przestrzeń wskazana przez Ownera (23.11.2026):** [SG2 Precomputed Forecasts — Codespace](https://improved-zebra-r4jj9q55w56jcx9wx.github.dev/). Dedykowana tej inicjatywie do realizacji mandatu E1 i ewentualnego odrębnego mandatu E2 w SG2 Development. Wskazanie przestrzeni nie dowodzi aktualnej konfiguracji repozytorium, uprawnień GitHub/PHR ani poprawnego uwierzytelnienia i nie stanowi mandatu wykonawczego. Faktyczne powiązanie i dostęp wymagają sprawdzenia przy zwykłym preflight uruchamianego etapu. Wpis dotyczy metadanych operacyjnych. Obowiązujący zakres wynika z aneksu w §0.
 
 ### Materiały normatywne
 
@@ -333,4 +384,4 @@ To jest **centralna Karta Projektu BSDC 1.0**, zaakceptowana przez Ownera jako j
 
 ---
 
-**STATUS:** `CARD_1.0 / OWNER_APPROVED / PUBLISHED / FINAL / DEVELOPMENT_ONLY / NO_EXECUTION_MANDATE`.
+**STATUS:** `CARD_1.0 / OWNER_APPROVED / PUBLISHED / FINAL / DEVELOPMENT_ONLY / E1_PARTIAL / E2_NOT_AUTHORIZED`.

@@ -14766,6 +14766,49 @@
           "surfaceId": "ARCH-BASE-001"
         }
       ]
+    },
+    {
+      "id": "SG2:SG2-BSDC-PRECOMPUTED-FORECASTS-E1-DEC08-20261123",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-BSDC-PRECOMPUTED-FORECASTS-E1-DEC08-20261123",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner:chat:01a20840-4865-7f62-b88e-da24c0fa4a9e:dec08-pr1312-controlled-ci-66977cf620ec4a75937748c19ddf6ae7554bed5b-20261123",
+      "sourceSha": "66977cf620ec4a75937748c19ddf6ae7554bed5b",
+      "baseSha": "899f91c88818add91f028170a2eefc2c21676bbf",
+      "validFrom": "2026-11-23T20:31:17.282Z",
+      "validUntil": "2026-11-24T20:31:20.282Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/components/benchmark-finder/benchmark-finder-client.tsx",
+          "blob": "09c5fa3887c64709c7fafacebe0877aeeac8ef53",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/benchmark-finder/benchmark-request.ts",
+          "blob": "43e20e52c295934f99ee278c5250dd8aada8b4dc",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/benchmark-discovery-request.test.ts",
+          "blob": "021c9cd9769c1c0ff4e12fb7df010ecb7c5c87f7",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
