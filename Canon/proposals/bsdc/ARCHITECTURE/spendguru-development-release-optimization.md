@@ -1,5 +1,5 @@
 # Karta Projektu — SpendGuru Development & Release Optimization
-## Karta v0.4 — pilotaż E3 przed dokończeniem E2 | 2026-11-24
+## Karta v0.5 — pilotaż E3 i Risk-Based CI/CD | 2026-11-24
 
 | Pole | Wartość |
 | --- | --- |
@@ -12,7 +12,7 @@
 | Kanon rozwiązania | [Projekt kanonu v0.3](../../spendguru-development-release-optimization-canon-v0.3.md) |
 | Zamrożona baza AS-IS | [SpendGuru-audyt-AS-IS-2026-11-21.md](https://github.com/profitia/spendguru/blob/7d10fec73cd69194523b320faf397982d9a8fd04/docs/audits/2026/11/21/SpendGuru-audyt-AS-IS-2026-11-21.md) (`ASIS-REF-01`, SHA-256 `5ee32757fe85896ab14089bd936f41a8c0fd283db67b672a60d8427a49e40683`) · prywatne repozytorium, SHA-256 potwierdzony po ponownym odczycie |
 | Metodologia | **BOE v1.1 i Karta inspirowana BSDC v1.1** (DEC-01, decyzja właściciela z 21.11.2026). |
-| Bieżący mandat | **E3-T01–E3-T03 — pilot jednej rzeczywistej poprawki R1** · DEC-11 z 24.11.2026. Wydanie wymaga ważnego mandatu dla dokładnego SHA i zasobu. |
+| Bieżący mandat | **E3-T01–E3-T03 — pilot jednej rzeczywistej poprawki R1** (DEC-11) oraz ograniczona obserwacja E4-T03 i E5-T01 (DEC-12). Wydanie wymaga ważnego mandatu dla dokładnego SHA i zasobu. |
 | Odbiór E1 | **OWNER_ACCEPTED / SUCCESS** · 21.11.2026 |
 
 ## 1. Potrzeba biznesowa i rezultat
@@ -52,6 +52,10 @@
 - `SECURITY_RISK`: **R1** — prezentacja; **R2** — zwykła funkcja; **R3** — współdzielone kontrakty/build/runtime; **R4** — Identity, dane/tenant, granty, sekrety, źródła zaufania lub governance.
 - `MIGRATION_COMPATIBILITY` stosuje się do rozwiązań dotykających tożsamości repozytorium, uprawnień i integracji. **READY** oznacza przenośność logiki, **NEEDS_ADAPTER** oznacza przyszłą adaptację konfiguracji lub autoryzacji, a **BLOCKED** oznacza sprzeczność z wymaganiem przenośności. Dla pozostałych zadań stosuje się **N/A**.
 - Priorytety: **P0** natychmiastowe quick wins, **P1** kolejny cykl, **P2** większy lub odroczony nakład. Klasa nie przesądza automatycznie zgody wykonawczej. **Obowiązkowość wyniku (MUST/CONDITIONAL) jest odrębna od P0/P1/P2**; w bazowym projekcie E4 i E5-T01 są MUST, E5-T02–T04 są CONDITIONAL.
+
+**Ryzyko integracji i wydania (DEC-12).** Jeden zaufany mechanizm ustala wymagany zakres kontroli na podstawie dokładnej kompozycji Git, rzeczywistych zależności, dotkniętych integracji i źródeł zaufania. Przy integracji ocenia deltę konkretnego PR-u względem bieżącej bazy. Przed wydaniem ocenia całą różnicę od potwierdzonej działającej wersji (LKG) danego zasobu do dokładnej wersji wydania, włącznie z jej zależnościami i konfiguracją. Wydanie może wymagać pełnej kwalifikacji także wtedy, gdy ostatni PR jest R1.
+
+Krótka walidacja R1 obejmuje dokładnego kandydata, w tym test osadzonego komponentu i rzeczywiście dotkniętych integracji. Ponowne użycie pojedynczego dowodu wymaga sprawdzenia tożsamości wszystkich wejść tej kontroli oraz jej zaufanej definicji. Wynik referencyjnego `main` jest dowodem dla bazy. Nieustalony wpływ lub zmiana chronionych wejść prowadzą do pełnej ścieżki. Dotyczy to w szczególności runtime, danych, Identity, uprawnień, SDK, wspólnych kontraktów i governance. Kandydat nie przyznaje sobie klasy, uprawnień ani dopuszczenia.
 
 ### 3.2. Backlog — jeden rejestr inicjatywy
 
@@ -132,6 +136,8 @@ Każdy etap to komplet rezultatów. Właściciel określa zakres zleconego etapu
 | **E4-T02 / GV-01b** | Minimalna, formalnie przyjęta implementacja i dual-run/adwersarialne testy | E4-T01 | PR, source proofs, negatywne testy, rollback |
 | **E4-T03 / GV-02** | Adekwatna branch/merge/release enforcement dla klas ryzyka | E4-T02 lub zatwierdzona kompatybilna ścieżka | Testy blokad i ścieżek prawidłowych; brak martwej blokady |
 
+**Walidacja obserwacyjna E4-T03 i E5-T01.** Od pierwszego udokumentowanego przypadku 24.11.2026 do pierwszego z dwóch limitów: 10 przypadków lub 5 dni roboczych. Istniejące bramki egzekwują aktualne decyzje. Dla rzeczywistego przypadku zapisujemy przewidywaną klasę integracji i wydania, zakres kontroli, rozbieżności z obowiązującą ścieżką, czas i wykryte braki. Wykorzystujemy naturalnie uruchomione pełne kontrole. Po limicie kończymy obserwację z wynikiem i rekomendacją do decyzji o egzekwowaniu albo z konkretną luką blokującą przełączenie. Aktywacja wymaga odrębnego exact dopuszczenia.
+
 ### E5 — Wczesna walidacja buildów (**MUST**) i warunkowa optymalizacja testów/wydań
 
 - **Cel:** zmniejszyć długie ogony czasu po merge, wykrywać prawdziwe błędy pakowania wcześniej, ograniczyć koszt wydawania wielu usług.
@@ -143,7 +149,7 @@ Każdy etap to komplet rezultatów. Właściciel określa zakres zleconego etapu
 
 | Task | Rezultat | Zależność | Dowód DoD |
 | --- | --- | --- | --- |
-| **E5-T01 / CI-02 — MUST** | Wcześniejszy build/start skompilowanego artefaktu i bezpieczne smoke | E2 | Dowód zgodności testowanego artefaktu i test awarii build/runtime |
+| **E5-T01 / CI-02 — MUST** | Wcześniejszy build/start skompilowanego artefaktu i bezpieczne smoke | Obserwacja lokalna równolegle z E3 (DEC-12); wdrożenie według właściwego dopuszczenia | Dowód zgodności testowanego artefaktu i test awarii build/runtime |
 | **E5-T02 / CI-03 — CONDITIONAL** | Ocena opłacalności i ewentualna deduplikacja testów dla identycznych wejść | E5-T01; pozytywna ocena | Porównanie pokrycia/ryzyka i czasu; albo uzasadnione odroczenie |
 | **E5-T03 / RL-01 — CONDITIONAL** | Zmniejszenie sprzężenia SG2–Finder/Neon tylko przy dowodzie równoważnej autoryzacji | E4, kwalifikacja R4, osobny mandat | Projekt, testy częściowego wykonania i rollback; brak naruszenia HOLD lub uzasadnione odroczenie |
 | **E5-T04 / RL-02 — CONDITIONAL** | Lżejsza, bezpieczna koordynacja wydania wielu usług | E5-T03 lub niezależna decyzja i osobny mandat | Przebieg release i odbiór E2E, dowód LKG; albo uzasadnione odroczenie |
@@ -155,7 +161,7 @@ Każdy etap to komplet rezultatów. Właściciel określa zakres zleconego etapu
 | ID | Kryterium | Dowód wymagany | Stan |
 | --- | --- | --- | --- |
 | FINAL-01 | Prosta R1 dostarczana w przyjętej, uproszczonej ścieżce | PR/CI/deploy/odbiór | NIE_ROZPOCZĘTY |
-| FINAL-02 | Porównanie `ready→merge` i `merge→Development` względem baseline | Pomiar z metodą i liczebnością próby | NIE_ROZPOCZĘTY |
+| FINAL-02 | Główna miara: czas od gotowej implementacji do działającej i odebranej zmiany na Development. Zachować porównywalne `ready→merge` i `merge→Development` | Znaczniki rozpoczęcia i końca, metoda, liczebność próby oraz odrębne czasy kolejki, walidacji, wydania i odbioru | NIE_ROZPOCZĘTY |
 | FINAL-03 | Przypadek pozytywny w przyjętym zakresie E2 przechodzi bez ponowienia wywołanego samą kolejnością dowodu | Wyniki CI przed/po, odmowa przy braku właściwego dowodu i rozliczenie przyczyn ponowień | NIE_ROZPOCZĘTY |
 | FINAL-04 | Wszystkie wymagane negatywne testy trust/Source/Identity/tenant nadal skuteczne | Niezależne wyniki CI i kontroli | NIE_ROZPOCZĘTY |
 | FINAL-05 | **Warunek zamknięcia całego projektu:** ukończone E1–E3, **E4 / GV-01 i GV-02**, **E5-T01 / CI-02**, a także zadania warunkowe jedynie wtedy, gdy osobno przyjęte jako obowiązkowe. Każda zmiana zakresu wymaga jawnej, wersjonowanej decyzji właściciela | Rejestr etapów, dowody DoD, decyzje właściciela i zaakceptowana rewizja | NIE_ROZPOCZĘTY |
@@ -380,6 +386,7 @@ W kontrolowanych przypadkach sprawdzono brak producenta, opóźnioną widocznoś
 | DEC-09 | E4-T01 / GV-01a przed E3 | **OWNER GO · DESIGN ONLY · 21.11.2026.** Zależność od E3 uchylona wyłącznie dla projektu rozwiązania blokady Source. E2 pozostaje `PARTIAL / SOURCE_HOLD`, a #1277 w HOLD. E4-T02/T03, E3 i E5 wymagają własnych mandatów. Obowiązkowe zadania E4, końcowe DoD E4, E5-T01 oraz cele i DoD E2/E3 zachowują moc. [Dowód wejściowy E2](https://github.com/profitia/project-history-repository/blob/d52be7503aa17a7d83ddcae123765a3c24ba2845/history/2026/11/21/2026-11-21-21-34-46Z__architecture-arch-dev-release-opt-20261121-e2-source-impasse/manifest.json). |
 | DEC-10 | Odbiór E4-T01 i ograniczony mandat E4-T02 | **OWNER ACCEPTED / LIMITED GO · 21.11.2026.** Przyjęto docelowy kierunek E4-T01 z warunkami niezależności, powiązania źródła i drzewa integracji, utrzymania przepływu R1 oraz recovery i rollbacku. E4-T02 obejmuje lokalny prototyp i walidację obserwacyjną. Instalacja, aktywacja, publikacja checków na żywych PR-ach oraz zmiany uprawnień i ochrony wymagają odrębnych decyzji. E2 pozostaje `PARTIAL / SOURCE_HOLD`, #1277 w HOLD, a E4-T03, E3 i E5 bez mandatu. [PHR projektu](https://github.com/profitia/project-history-repository/blob/0fe5edd179769e3b138e0b08734f445624c1adba/history/2026/11/21/2026-11-21-21-50-27Z__architecture-arch-dev-release-opt-20261121-e4-t01/manifest.json) · [PHR materiału do odbioru](https://github.com/profitia/project-history-repository/blob/f7a6477ce512fd4bf8b995e13347aa8828ff2629/history/2026/11/21/2026-11-21-22-03-39Z__architecture-arch-dev-release-opt-20261121-e4-t01-review/manifest.json). |
 | DEC-11 | Pilotaż E3 przed dokończeniem E2 | **OWNER SCOPE REVISION · 24.11.2026.** Uruchomić E3-T01–E3-T03 jako jeden pilot R1 wyłącznie na SG2 Development Dashboard. Odroczyć E2-T02/T03, zachować #1277 w `DRAFT_HOLD` i pakiet GSL/SDK jako `FROZEN`. DoD E2, kontrole Source/CI/release i obowiązkowość E4 oraz E5-T01 pozostają wiążące. Pilot E3 stanowi osobny mierzalny wynik. Odbiór pakietu E1–E3 i zamknięcie inicjatywy zachowują własne kryteria. |
+| DEC-12 | Risk-Based CI/CD i limit obserwacji | **OWNER ACCEPTED · 24.11.2026.** Dokończyć pilot #1319 w przyjętym zakresie. Jeden zaufany mechanizm dobiera walidację według rzeczywistego wpływu, z osobną kwalifikacją integracji PR-u i wydania całej różnicy od LKG. Przyspieszyć E4-T03 i E5-T01, zaczynając od obserwacji do 10 przypadków lub 5 dni roboczych, zależnie od tego, co nastąpi wcześniej. Dopuścić wczesne kontrole osadzenia i dotkniętych integracji. Ewentualne przesunięcie pełnego SG2 za merge podlega wyłącznie warunkom przejściowym pilota E3. Wydanie i techniczne egzekwowanie nowej ścieżki wymagają własnego exact dopuszczenia. Niezależne prace mogą postępować równolegle. |
 
 **Warunki zatrzymania operacji:** brak ważnego mandatu, niezgodny owner/routing, nieaktualny source SHA, brak wymaganej niezależnej kwalifikacji, ryzyko naruszenia tenant/Identity/sekretów, niepewny stan zapisu Neon, brak LKG lub kolizja z aktywnym wydaniem. Stop dotyczy zależnej operacji; bezpieczne prace niezależne mogą być kontynuowane **w aktywnym etapie**.
 
@@ -401,3 +408,4 @@ W kontrolowanych przypadkach sprawdzono brak producenta, opóźnioną widocznoś
 - **21.11.2026 — odbiór E4-T01:** właściciel przyjął kierunek architektury i ograniczony mandat E4-T02 według DEC-10. E4-T02 zarejestrowany w PMOS.
 
 - **24.11.2026 — v0.4 / DEC-11:** właściciel odroczył E2-T02/T03 i zlecił niezależny od nich pilot E3 na obowiązującej ścieżce SG2 Development. #1277 i pakiet GSL/SDK zachowano do późniejszego wznowienia.
+- **24.11.2026 — v0.5 / DEC-12:** właściciel przyjął osobną ocenę ryzyka integracji i wydania, dokończenie #1319 oraz ograniczony czas obserwacji. Główna miara kończy się odbiorem działającego Development.
