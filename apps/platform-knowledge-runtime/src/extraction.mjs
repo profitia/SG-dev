@@ -8,7 +8,13 @@ export const EXTENSIONS=new Set(['.pdf','.doc','.docx','.ppt','.pptx','.txt','.m
 export async function extractDocument(bytes,fileName,{signal}={}){
  const extension=path.extname(fileName).toLowerCase();if(!EXTENSIONS.has(extension))throw new Fault(415,'UNSUPPORTED_FORMAT');
  if(!Buffer.isBuffer(bytes)||bytes.length<1||bytes.length>52428800)throw new Fault(413,'FILE_LIMIT');
- const directory=await fs.mkdtemp(path.join(os.tmpdir(),'pk-job-'));await fs.chmod(directory,0o700);
+ // Render can mount a fresh temporary filesystem after image construction.
+ // Restore the configured root before making each private, per-job directory.
+ const tempRoot=os.tmpdir();
+ try{await fs.mkdir(tempRoot,{recursive:true,mode:0o700});const st=await fs.lstat(tempRoot);
+  if(!st.isDirectory()||st.isSymbolicLink())throw Error('UNSAFE_TEMP_ROOT');
+ }catch{throw new Fault(503,'PARSER_TEMP_ROOT_UNAVAILABLE');}
+ const directory=await fs.mkdtemp(path.join(tempRoot,'pk-job-'));await fs.chmod(directory,0o700);
  const input=path.join(directory,'source'+extension);
  try{
   await fs.writeFile(input,bytes,{mode:0o600});

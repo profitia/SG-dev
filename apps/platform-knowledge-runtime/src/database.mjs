@@ -10,12 +10,14 @@ export function createDatabase(config){
      r.rolsuper,r.rolinherit,r.rolcreatedb,r.rolcreaterole,r.rolreplication,r.rolbypassrls,
      has_schema_privilege(current_user,'platform_knowledge','USAGE') AS schema_usage,
      has_schema_privilege(current_user,'platform_knowledge','CREATE') AS schema_create,
+     CASE WHEN to_regclass('platform_knowledge.audit') IS NULL THEN false ELSE has_column_privilege(current_user,'platform_knowledge.audit','created_at','SELECT') END AS audit_retention_read,
      pg_has_role(current_user,'platform_knowledge_owner','MEMBER') AS owner_member,
      EXISTS(SELECT 1 FROM pg_extension WHERE extname='vector') AS vector_installed
      FROM pg_roles r WHERE r.rolname=current_user`);
    const r=rows[0];
    if(!r||r.database_name!=='platform_knowledge'||r.role_name!==config.expectedRole||r.rolsuper||r.rolcreatedb
      ||r.rolinherit||r.rolcreaterole||r.rolreplication||r.rolbypassrls||!r.schema_usage||r.schema_create||r.owner_member||!r.vector_installed)throw new Error('DATABASE_IDENTITY_REJECTED');
+   if(config.processingEnabled&&config.expectedRole==='platform_knowledge_worker'&&!r.audit_retention_read)throw Error('RETENTION_PERMISSION_REQUIRED');
    return {status:'VERIFIED_LIMITED_ROLE'};
  },close:()=>pool.end()};
 }

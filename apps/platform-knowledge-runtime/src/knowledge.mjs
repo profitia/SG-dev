@@ -45,9 +45,9 @@ export async function queryKnowledge({pool,provider,query,scope}){
   const vectors=await provider.embed({sourceId:allowed[0].id,texts:[query.query],key:'query-'+digest({requestId:query.requestId,user:principal.internalUserId??null,scopes:query.scopes}),query:true,scope});
   const rows=await transaction(pool,async db=>{
    const generations=allowed.map(s=>s.active_generation_id),identifiers=queryIdentifiers(query.query);
-   const semantic=(await db.query(`SELECT id,generation_id,1-(embedding <=> $2::public.vector) AS similarity
+   const semantic=(await db.query(`SELECT id,generation_id,1-(embedding OPERATOR(public.<=>) $2::public.vector) AS similarity
     FROM platform_knowledge.chunks WHERE generation_id=ANY($1::uuid[]) AND embedding IS NOT NULL
-    ORDER BY embedding <=> $2::public.vector,id LIMIT 40`,[generations,JSON.stringify(vectors[0])])).rows;
+    ORDER BY embedding OPERATOR(public.<=>) $2::public.vector,id LIMIT 40`,[generations,JSON.stringify(vectors[0])])).rows;
    const lexical=(await db.query(`SELECT id,generation_id,ts_rank_cd(search_text,websearch_to_tsquery('simple',$2)) AS lexical_score
     FROM platform_knowledge.chunks WHERE generation_id=ANY($1::uuid[]) AND search_text @@ websearch_to_tsquery('simple',$2)
     ORDER BY lexical_score DESC,id LIMIT 40`,[generations,query.query])).rows;
