@@ -46,7 +46,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [integration, validate-sg2, policy-probe, test-only-pr1283]
+        options: [integration, validate-sg2, policy-probe, test-only-pr1283, publish-e4-source-evidence]
         default: integration
       candidate_pr:
         description: 'Internal SG2/SRM or bounded Architecture producer PR; empty validates exact main'
@@ -64,13 +64,30 @@ on:
         description: 'Independently approved workflow blob, required only for test-only-pr1283'
         type: string
 
+      proof_run_id:
+        description: Successful native GV-01b Source proof run
+        required: false
+        type: string
+      evidence_expected_main:
+        description: Exact current main SHA
+        required: false
+        type: string
+      evidence_expected_tree:
+        description: Exact GitHub integration tree for PR 1325
+        required: false
+        type: string
+      evidence_policy_digest:
+        description: SHA-256 of the independently pinned GV-01b observation policy
+        required: false
+        type: string
+
 permissions:
   contents: read
 
 jobs:
   producer:
     name: Architecture contract and lab
-    if: inputs.mode != 'test-only-pr1283'
+    if: inputs.mode != 'test-only-pr1283' && inputs.mode != 'publish-e4-source-evidence'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -190,6 +207,7 @@ jobs:
           if-no-files-found: error
 
   consumers:
+    if: inputs.mode != 'publish-e4-source-evidence'
     name: ${{ matrix.project }} contract adoption
     runs-on: ubuntu-latest
     strategy:
@@ -676,3 +694,45 @@ jobs:
         run: |
           test "$GITHUB_REF" = refs/heads/main
           echo MAIN_ONLY_ENVIRONMENT_POLICY_PASS
+
+  e4-source-admission-evidence:
+    name: Publish verified GV-01b evidence for PR 1325
+    if: >-
+      ${{ github.repository == 'profitia/SG-dev' &&
+          github.repository_id == '1247665550' &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'workflow_dispatch' &&
+          inputs.mode == 'publish-e4-source-evidence' &&
+          github.actor == 'profitia' &&
+          github.triggering_actor == 'profitia' &&
+          github.run_attempt == '1' }}
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify live source and original native CI proof
+        env:
+          GH_TOKEN: ${{ github.token }}
+          E4_PROOF_RUN: ${{ inputs.proof_run_id }}
+          E4_EXPECTED_MAIN: ${{ inputs.evidence_expected_main }}
+          E4_EXPECTED_TREE: ${{ inputs.evidence_expected_tree }}
+          E4_POLICY_DIGEST: ${{ inputs.evidence_policy_digest }}
+        run: node scripts/governance/publish-e4-source-evidence.mjs
+      - name: Publish original evidence descriptor
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: source-admission-evidence
+          path: ${{ runner.temp }}/e4-source-admission/evidence.json
+          if-no-files-found: error
+          retention-days: 14
