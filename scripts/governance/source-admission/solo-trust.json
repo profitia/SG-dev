@@ -1,0 +1,21 @@
+{
+  "appId": 5871888,
+  "decisionCommentId": 7157677871,
+  "publisherRunId": 45599370865,
+  "publisherArtifactId": 15014921654,
+  "owner": {
+    "id": "gv01b-1325-owner",
+    "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAWX/vUXIPK+WVTyFAgfErYi2dXkspHRSita+5UIH5frY=\n-----END PUBLIC KEY-----\n",
+    "fingerprint": "5df7f6feda84f8ca4bc951a4212205ef04cb13f88d076728b90f73b7d5a401e8"
+  },
+  "producer": {
+    "id": "gv01b-1325-producer",
+    "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAsbwNoRLWnMWZXYSDUB2jC1I+xuze1uVMdNzlElB21L8=\n-----END PUBLIC KEY-----\n",
+    "fingerprint": "d9302174b28a63dd22481b50456912c26dbc480709233a1f64c6652ac10e6029"
+  },
+  "verifier": {
+    "id": "gv01b-1325-verifier",
+    "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAX9LQd3YP6IlfB+P3Ukvu+IPVPVt9Cf1e+lALEK/+EK4=\n-----END PUBLIC KEY-----\n",
+    "fingerprint": "f2e1f64e069d82870df30115ca7bfd1bb7fa5e5ea3d76d4a0acdc8146ae35598"
+  }
+}
