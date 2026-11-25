@@ -1,0 +1,17 @@
+{
+  "schema": "sg-gv-01b-observation/v1",
+  "mode": "observation",
+  "repository": "profitia/SG-dev",
+  "repoId": 1247665550,
+  "repoOwnerId": 275643368,
+  "authoritySha": "58e6891e4232111ac2e6932a30b0c6b4d4372faf",
+  "appVersion": "gv-01b@8cc552056a04aa42db482a645474916149f789bf",
+  "evidence": {
+    "workflowId": 383640662,
+    "workflowPath": ".github/workflows/platform-contracts-ci.yml",
+    "actorId": 275643368,
+    "controlSha": "58e6891e4232111ac2e6932a30b0c6b4d4372faf",
+    "controlBranch": "main"
+  },
+  "r1Paths": {}
+}

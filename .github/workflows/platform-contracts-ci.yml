@@ -46,7 +46,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [integration, validate-sg2, policy-probe, test-only-pr1283, publish-e4-source-evidence]
+        options: [integration, validate-sg2, policy-probe, test-only-pr1283, publish-e4-source-evidence, gv01b-solo-observation]
         default: integration
       candidate_pr:
         description: 'Internal SG2/SRM or bounded Architecture producer PR; empty validates exact main'
@@ -87,7 +87,7 @@ permissions:
 jobs:
   producer:
     name: Architecture contract and lab
-    if: inputs.mode != 'test-only-pr1283' && inputs.mode != 'publish-e4-source-evidence'
+    if: inputs.mode != 'test-only-pr1283' && inputs.mode != 'publish-e4-source-evidence' && inputs.mode != 'gv01b-solo-observation'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -207,7 +207,7 @@ jobs:
           if-no-files-found: error
 
   consumers:
-    if: inputs.mode != 'publish-e4-source-evidence'
+    if: inputs.mode != 'publish-e4-source-evidence' && inputs.mode != 'gv01b-solo-observation'
     name: ${{ matrix.project }} contract adoption
     runs-on: ubuntu-latest
     strategy:
@@ -734,5 +734,85 @@ jobs:
         with:
           name: source-admission-evidence
           path: ${{ runner.temp }}/e4-source-admission/evidence.json
+          if-no-files-found: error
+          retention-days: 14
+
+  gv01b-solo-producer:
+    name: GV-01b solo producer for PR 1325
+    if: >-
+      ${{ github.repository == 'profitia/SG-dev' && github.event_name == 'workflow_dispatch' &&
+          inputs.mode == 'gv01b-solo-observation' && github.ref == 'refs/heads/governance/gv01b-control' &&
+          github.actor == 'profitia' && github.triggering_actor == 'profitia' && github.run_attempt == '1' &&
+          github.sha == inputs.approved_workflow_sha }}
+    environment: gv01b-producer-development
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify host and read-only permissions before loading role key
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPROVED_WORKFLOW_BLOB: ${{ inputs.approved_workflow_blob }}
+        run: bash scripts/governance/source-admission/solo-preflight.sh
+      - name: Sign exact observation as producer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GV01B_ROLE_KEY: ${{ secrets.GV01B_PRODUCER_ED25519_PRIVATE }}
+        run: node scripts/governance/source-admission/solo-host.mjs producer - "$RUNNER_TEMP/gv01b-producer.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gv01b-solo-producer
+          path: ${{ runner.temp }}/gv01b-producer.json
+          if-no-files-found: error
+          retention-days: 14
+
+  gv01b-solo-verifier:
+    name: GV-01b solo verifier for PR 1325
+    needs: gv01b-solo-producer
+    environment: gv01b-verifier-development
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify host and read-only permissions before loading role key
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPROVED_WORKFLOW_BLOB: ${{ inputs.approved_workflow_blob }}
+        run: bash scripts/governance/source-admission/solo-preflight.sh
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: gv01b-solo-producer
+          path: ${{ runner.temp }}/gv01b-producer-envelope
+      - name: Independently verify the original and sign the verdict
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GV01B_ROLE_KEY: ${{ secrets.GV01B_VERIFIER_ED25519_PRIVATE }}
+        run: node scripts/governance/source-admission/solo-host.mjs verifier "$RUNNER_TEMP/gv01b-producer-envelope/gv01b-producer.json" "$RUNNER_TEMP/gv01b-verifier.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gv01b-solo-verifier
+          path: ${{ runner.temp }}/gv01b-verifier.json
           if-no-files-found: error
           retention-days: 14
