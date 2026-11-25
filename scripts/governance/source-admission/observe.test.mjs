@@ -149,15 +149,34 @@ async function signed(t, options) {
     verifierKey: verifier.privateKey }, state, runRecord }
 }
 
-test('R1 does not call R4 grant, action or download adapters and never authorizes merge', async t => {
+const reviewedImpact = binding => ({ binding, scope: 'PRESENTATION_ONLY', complete: true,
+  protectedInputsUnchanged: true, inputsDigest: 'c'.repeat(64) })
+
+test('R1 with exact independent impact does not call R4 dependencies or authorize merge', async t => {
   const { options, reads } = fixture(t, { risk: 'R1' })
   const unavailable = () => { assert.fail('R4 dependency used for R1') }
   for (const verifierKey of [undefined, {}]) {
-    const result = await observePullRequest({ ...options, verifierKey, grantState: unavailable, downloadZip: unavailable })
+    const result = await observePullRequest({ ...options, readIntegrationImpact: reviewedImpact,
+      verifierKey, grantState: unavailable, downloadZip: unavailable })
     assert.deepEqual(result, { status: 'NOT_APPLICABLE', reason: 'EXISTING_CONTROLS_ONLY',
       route: 'R1', mode: 'observation', mergeAuthority: false })
   }
   assert(reads.every(path => !path.includes('/actions/')))
+})
+
+test('the same path keeps full controls when impact is missing, protected, stale, or unresolved', async t => {
+  const { options } = fixture(t, { risk: 'R1' })
+  for (const readIntegrationImpact of [undefined, () => { throw new Error('observer unavailable') },
+    binding => ({ ...reviewedImpact(binding), complete: false }),
+    binding => ({ ...reviewedImpact(binding), protectedInputsUnchanged: false }),
+    binding => ({ ...reviewedImpact(binding), binding: { ...binding, tree: 'a'.repeat(40) } }),
+    binding => ({ ...reviewedImpact(binding), binding: { ...binding, main: 'b'.repeat(40) } }),
+    binding => ({ ...reviewedImpact(binding), binding: { ...binding, policyDigest: 'd'.repeat(64) } }),
+  ]) {
+    const result = await observePullRequest({ ...options, readIntegrationImpact })
+    assert.equal(result.route, 'CONTROLLED')
+    assert.equal(result.mergeAuthority, false)
+  }
 })
 
 test('scope denied, stale base and drifted routing fail closed', async t => {

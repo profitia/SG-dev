@@ -16,7 +16,7 @@ const routedInputs = [
   'scripts/governance/routing-engine.mjs',
 ]
 
-function observedPolicy(bytes, expectedDigest, resolveRoute) {
+function observedPolicy(bytes, expectedDigest, resolveRoute, readIntegrationImpact) {
   requireThat(Buffer.isBuffer(bytes) && bytes.length <= 64 * 1024 &&
     sha256(bytes) === expectedDigest, 'TRUST_POLICY_DIGEST_MISMATCH')
   const config = JSON.parse(bytes)
@@ -29,10 +29,11 @@ function observedPolicy(bytes, expectedDigest, resolveRoute) {
     evidence && positiveId(evidence.workflowId) && positiveId(evidence.actorId) &&
     isOid(evidence.controlSha) && typeof evidence.controlBranch === 'string' &&
     /^\.github\/workflows\/[A-Za-z0-9._-]+\.ya?ml$/.test(evidence.workflowPath ?? '') &&
-    typeof resolveRoute === 'function', 'INVALID_OBSERVATION_POLICY')
+    typeof resolveRoute === 'function' &&
+    (readIntegrationImpact === undefined || typeof readIntegrationImpact === 'function'), 'INVALID_OBSERVATION_POLICY')
   return {
     repository, repoId, repoOwnerId, authoritySha, evidence, appVersion, r1Paths,
-    digest: expectedDigest,
+    digest: expectedDigest, readIntegrationImpact,
     resolveRoute(path) {
       const route = resolveRoute(path)
       return route?.projectBoundaryStatus === 'ALLOWED' ? route : null
@@ -108,10 +109,10 @@ export function originalGitHubRun({ get, downloadZip, policy, binding, runId, at
 // The adapter accepts read capabilities only and cannot publish a check or perform a merge.
 export async function observePullRequest({
   policyBytes, expectedDigest, resolveRoute, readGitHub, git, pullNumber, trust,
-  decision, proof, grantState, downloadZip, verifierKey, clock = Date.now,
+  decision, proof, grantState, downloadZip, verifierKey, readIntegrationImpact, clock = Date.now,
 }) {
   try {
-    const policy = observedPolicy(policyBytes, expectedDigest, resolveRoute)
+    const policy = observedPolicy(policyBytes, expectedDigest, resolveRoute, readIntegrationImpact)
     const observe = createObservation({
       readSnapshot: async () => {
         const snapshot = await readGitHubSnapshot(readGitHub, policy.repository, pullNumber)

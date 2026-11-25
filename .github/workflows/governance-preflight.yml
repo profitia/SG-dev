@@ -2,15 +2,7 @@ name: Governance preflight
 
 on:
   pull_request:
-    paths:
-      - 'AGENTS.md'
-      - '.github/copilot-instructions.md'
-      - '.github/workflows/governance-preflight.yml'
-      - 'Canon/**'
-      - 'scripts/governance/**'
-      - 'apps/pmos/**'
-      - 'apps/pcos-explorer/**'
-      - 'render.yaml'
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
     paths:
@@ -24,7 +16,104 @@ on:
       - 'render.yaml'
 
 jobs:
+  gv02-baseline:
+    name: ${{ github.base_ref == 'main' && 'sgdev-gv02-pr-baseline' || 'Governance PR scope' }}
+    if: >-
+      ${{ github.event_name == 'pull_request' &&
+        (github.base_ref == 'main' || github.event.action != 'ready_for_review') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      governance_scope: ${{ steps.source.outputs.governance_scope }}
+    steps:
+      - name: Bind the PR to the exact GitHub integration tree
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_PROMPT_DISABLED: '1'
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = pull_request
+          test "$GITHUB_REPOSITORY" = profitia/SG-dev
+          test "$GITHUB_REPOSITORY_ID" = 1247665550
+
+          read -r number base_ref head < <(jq -er '
+            select(.repository.id==1247665550 and .pull_request.base.repo.id==1247665550)
+            | [.number,.pull_request.base.ref,.pull_request.head.sha] | @tsv' "$GITHUB_EVENT_PATH")
+          [[ "$number" =~ ^[1-9][0-9]*$ ]]
+          for oid in "$head" "$GITHUB_SHA"; do
+            [[ "$oid" =~ ^[a-f0-9]{40}$ ]]
+          done
+          test "$GITHUB_REF" = "refs/pull/$number/merge"
+          repo=repos/profitia/SG-dev
+
+          read_pull() {
+            gh api "$repo/pulls/$number" | jq -ce --argjson number "$number" \
+              --arg ref "$base_ref" --arg head "$head" --arg merge "$GITHUB_SHA" '
+              select(.number==$number and .state=="open" and .merged==false
+                and .base.repo.id==1247665550 and .base.ref==$ref
+                and .head.sha==$head and .merge_commit_sha==$merge)
+              | {number,changed_files}'
+          }
+
+          if [[ "$base_ref" == main ]]; then
+            # Pull-request metadata can retain an older base SHA after the test merge is refreshed.
+            base=$(gh api "$repo/git/ref/heads/main" --jq .object.sha)
+            [[ "$base" =~ ^[a-f0-9]{40}$ ]]
+          fi
+
+          pull=$(read_pull)
+          # An incomplete path list retains the existing full governance job.
+          governance_scope=true
+          count=$(jq -er '.changed_files' <<<"$pull")
+          if [[ "$count" =~ ^[0-9]+$ ]] && (( count <= 3000 )); then
+            if pages=$(gh api "$repo/pulls/$number/files?per_page=100" --paginate --slurp) &&
+              matched=$(jq -er --argjson count "$count" '
+                def governance_path: test("^(AGENTS[.]md|[.]github/copilot-instructions[.]md|[.]github/workflows/governance-preflight[.]yml|render[.]yaml)$|^(Canon/|scripts/governance/|apps/pmos/|apps/pcos-explorer/)");
+                if type=="array" and all(.[]; type=="array") then add // [] else error("invalid page") end
+                | select(length==$count and all(.[]; .filename|type=="string"))
+                | any(.[]; (.filename|governance_path) or ((.previous_filename // "")|governance_path))
+                | tostring' <<<"$pages"); then
+              governance_scope=$matched
+            fi
+          fi
+
+          test "$(read_pull)" = "$pull"
+          printf 'governance_scope=%s\n' "$governance_scope" >> "$GITHUB_OUTPUT"
+          # Keep the original governance path selection for PRs targeting other branches.
+          if [[ "$base_ref" != main ]]; then
+            exit 0
+          fi
+
+          tree=$(gh api "$repo/git/commits/$GITHUB_SHA" | jq -er \
+            --arg merge "$GITHUB_SHA" --arg base "$base" --arg head "$head" '
+            select(.sha==$merge and [.parents[].sha]==[$base,$head])
+            | .tree.sha | select(test("^[a-f0-9]{40}$"))')
+
+          test "$(read_pull)" = "$pull"
+          test "$(gh api "$repo/git/ref/heads/main" --jq .object.sha)" = "$base"
+          jq -n --argjson repo "$GITHUB_REPOSITORY_ID" --argjson pr "$number" \
+            --arg base "$base" --arg head "$head" --arg merge "$GITHUB_SHA" \
+            --arg tree "$tree" --argjson run "$GITHUB_RUN_ID" --argjson attempt "$GITHUB_RUN_ATTEMPT" \
+            '{repositoryId:$repo,pr:$pr,base:$base,head:$head,testMerge:$merge,tree:$tree,run:$run,attempt:$attempt}' \
+            > "$RUNNER_TEMP/gv02-pr-baseline.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: github.base_ref == 'main'
+        with:
+          name: gv02-pr-baseline
+          path: ${{ runner.temp }}/gv02-pr-baseline.json
+          retention-days: 14
+          if-no-files-found: error
+
   governance:
+    needs: gv02-baseline
+    if: >-
+      ${{ !cancelled() && (github.event_name == 'push' ||
+        (github.event.action != 'ready_for_review' && (needs.gv02-baseline.result != 'success' ||
+          needs.gv02-baseline.outputs.governance_scope != 'false'))) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

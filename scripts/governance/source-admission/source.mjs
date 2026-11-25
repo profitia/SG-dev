@@ -112,11 +112,8 @@ export function inspectSource(snapshot, git, policy) {
   const owners = files.map(({ path }) => policy.resolveRoute(path))
   requireThat(owners.every(route => route?.baselineClassification === 'ALIGNED' && route.currentOwner),
     'ROUTING_NOT_PROVEN', { hold: true })
-  const risk = files.some(({ path }, index) => protectedPath.test(path) ||
-    owners[index].currentOwner === 'Governance Source Layer') ? 'R4'
-    : files.every(({ path, change, before, after }, index) =>
-      Object.hasOwn(policy.r1Paths, path) && policy.r1Paths[path] === owners[index].currentOwner &&
-      change === 'M' && before?.mode === '100644' && after?.mode === '100644') ? 'R1' : 'CONTROLLED'
+  const requiresProtectedReview = files.some(({ path }, index) => protectedPath.test(path) ||
+    owners[index].currentOwner === 'Governance Source Layer')
   const scopedFiles = files.map((file, index) => ({ ...file, owner: owners[index].currentOwner }))
 
   requireThat(testMerge && isOid(testMerge.sha) && testMerge.sha === pr.merge_commit_sha,
@@ -129,12 +126,35 @@ export function inspectSource(snapshot, git, policy) {
   requireThat(canonical(git.delta(main, testMerge.sha)) === canonical(files),
     'INTEGRATION_DELTA_MISMATCH', { hold: true })
 
-  return {
+  const source = {
     repository: repo.full_name, repoId: repo.id, repoOwnerId: repo.owner.id, pr: pr.number,
     target: 'refs/heads/main', head: pr.head.sha, mergeBase, main, testMerge: testMerge.sha,
     integrationTree: observedMerge.tree, files: scopedFiles,
-    sourceDigest: sha256(canonical(scopedFiles)), risk, draft: pr.draft !== false,
+    sourceDigest: sha256(canonical(scopedFiles)), draft: pr.draft !== false,
   }
+  if (requiresProtectedReview) return { ...source, risk: 'R4' }
+
+  const presentationSurface = files.every(({ path, change, before, after }, index) =>
+    Object.hasOwn(policy.r1Paths, path) && policy.r1Paths[path] === owners[index].currentOwner &&
+    change === 'M' && before?.mode === '100644' && after?.mode === '100644')
+  if (!presentationSurface || typeof policy.readIntegrationImpact !== 'function') return { ...source, risk: 'CONTROLLED' }
+
+  const binding = Object.freeze({ repository: source.repository, pr: source.pr, main, head: source.head,
+    tree: source.integrationTree, sourceDigest: source.sourceDigest, policyDigest: policy.digest })
+  let impact
+  try {
+    impact = policy.readIntegrationImpact(binding)
+  } catch {
+    return { ...source, risk: 'CONTROLLED' }
+  }
+  const observedBinding = impact?.binding
+  const matches = observedBinding && Object.getPrototypeOf(observedBinding) === Object.prototype &&
+    Object.keys(observedBinding).length === Object.keys(binding).length &&
+    Object.entries(binding).every(([key, value]) => Object.hasOwn(observedBinding, key) && observedBinding[key] === value)
+  const qualified = impact?.scope === 'PRESENTATION_ONLY' && impact.complete === true &&
+    impact.protectedInputsUnchanged === true && /^[a-f0-9]{64}$/.test(impact.inputsDigest ?? '') &&
+    matches
+  return { ...source, risk: qualified ? 'R1' : 'CONTROLLED' }
 }
 
 export async function readGitHubSnapshot(get, repository, number) {
