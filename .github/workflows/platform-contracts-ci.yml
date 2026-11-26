@@ -1,4 +1,5 @@
 name: Platform contract integration
+run-name: ${{ inputs.mode == 'publish-gv02-r1-proof' && format('GV02 R1 {0} {1} {2}', inputs.candidate_pr, inputs.expected_sha, inputs.evidence_expected_main) || '' }}
 
 on:
   pull_request:
@@ -46,7 +47,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [integration, validate-sg2, policy-probe, test-only-pr1283, publish-e4-source-evidence, publish-gv02-r1-proof]
+        options: [integration, validate-sg2, policy-probe, test-only-pr1283, publish-e4-source-evidence, publish-gv02-r1-proof, gv02-protected-executor]
         default: integration
       candidate_pr:
         description: 'Internal SG2/SRM or bounded Architecture producer PR; empty validates exact main'
@@ -76,6 +77,12 @@ on:
         description: Exact GitHub integration tree for the evidence target
         required: false
         type: string
+      gv02_baseline_artifact:
+        description: Original baseline artifact for protected GV-02
+        type: string
+      gv02_r1_artifact:
+        description: Original R1 artifact for protected GV-02
+        type: string
       evidence_policy_digest:
         description: SHA-256 of the independently pinned GV-01b observation policy
         required: false
@@ -87,7 +94,7 @@ permissions:
 jobs:
   producer:
     name: Architecture contract and lab
-    if: inputs.mode != 'test-only-pr1283' && inputs.mode != 'publish-e4-source-evidence' && inputs.mode != 'publish-gv02-r1-proof'
+    if: inputs.mode != 'test-only-pr1283' && inputs.mode != 'publish-e4-source-evidence' && inputs.mode != 'publish-gv02-r1-proof' && inputs.mode != 'gv02-protected-executor'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -207,7 +214,7 @@ jobs:
           if-no-files-found: error
 
   consumers:
-    if: inputs.mode != 'publish-e4-source-evidence' && inputs.mode != 'publish-gv02-r1-proof'
+    if: inputs.mode != 'publish-e4-source-evidence' && inputs.mode != 'publish-gv02-r1-proof' && inputs.mode != 'gv02-protected-executor'
     name: ${{ matrix.project }} contract adoption
     runs-on: ubuntu-latest
     strategy:
@@ -245,7 +252,7 @@ jobs:
 
   operations:
     name: ${{ matrix.project }} operation integration
-    needs: controlled-sg2
+    needs: [controlled-sg2, gv02-main-route]
     # This public job has no package credential; SG2 verifies a separately bound proof.
     if: always() && (github.event_name != 'workflow_dispatch' || inputs.mode == 'integration') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
@@ -310,7 +317,7 @@ jobs:
           path: trusted-control
           persist-credentials: false
       - name: Verify controlled SG2 proof for the exact candidate without package access
-        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SG2'
+        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SG2' && needs.gv02-main-route.outputs.r1 != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -350,9 +357,45 @@ jobs:
           path: /tmp/operation-context-proof.json
           retention-days: 30
 
+  gv02-main-route:
+    name: Verify exact GV-02 R1 resulting main
+    if: >-
+      ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          github.repository_id == '1247665550' && github.actor_id == '359783674' &&
+          vars.GV02_ROUTINE_ENABLED == 'true' && vars.GV02_SHADOW_PR == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      pull-requests: read
+    outputs:
+      r1: ${{ steps.readback.outputs.r1 }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ vars.GV02_ROUTINE_CONTROL_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify completed exact merge from frozen authority
+        id: readback
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GV02_CONTROL_SHA: ${{ vars.GV02_ROUTINE_CONTROL_SHA }}
+          GV02_MODE: readback
+        run: |
+          set -euo pipefail
+          node scripts/governance/source-admission/gv02-executor.mjs
+          echo 'r1=true' >> "$GITHUB_OUTPUT"
+
   controlled-sg2:
     name: SG2 controlled operation integration
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.mode == 'validate-sg2' || inputs.mode == 'test-only-pr1283')))
+    needs: gv02-main-route
+    if: github.ref == 'refs/heads/main' && !cancelled() && ((github.event_name == 'push' && needs.gv02-main-route.outputs.r1 != 'true') || (github.event_name == 'workflow_dispatch' && (inputs.mode == 'validate-sg2' || inputs.mode == 'test-only-pr1283')))
     concurrency:
       group: ${{ inputs.mode == 'test-only-pr1283' && 'sg2-pr1283-test-only' || format('sg2-controlled-{0}-{1}', github.run_id, github.run_attempt) }}
       cancel-in-progress: false
@@ -745,15 +788,26 @@ jobs:
           github.ref == 'refs/heads/main' &&
           github.event_name == 'workflow_dispatch' &&
           inputs.mode == 'publish-gv02-r1-proof' &&
-          github.actor_id == '275643368' &&
-          github.triggering_actor == 'profitia' &&
-          github.run_attempt == '1' }}
+          github.actor_id == '41898282' &&
+          github.triggering_actor == 'github-actions[bot]' &&
+          github.run_attempt == '1' &&
+          ((vars.GV02_ROUTINE_ENABLED == 'true' && vars.GV02_SHADOW_PR == '') ||
+           (vars.GV02_SHADOW_PR != '' && vars.GV02_SHADOW_PR == inputs.candidate_pr &&
+            vars.GV02_ROUTINE_ENABLED != 'true' && vars.GV02_ROUTINE_MERGE_ENABLED != 'true')) }}
+    env:
+      GV02_ROUTINE_ENABLED: ${{ vars.GV02_ROUTINE_ENABLED }}
+      GV02_ROUTINE_MERGE_ENABLED: ${{ vars.GV02_ROUTINE_MERGE_ENABLED }}
+      GV02_SHADOW_PR: ${{ vars.GV02_SHADOW_PR }}
     permissions:
       actions: read
+      checks: read
       contents: read
       pull-requests: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: gv02-r1-proof-${{ inputs.candidate_pr }}-${{ inputs.expected_sha }}-${{ inputs.evidence_expected_main }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -797,3 +851,98 @@ jobs:
           path: ${{ runner.temp }}/gv02-r1-proof.json
           if-no-files-found: error
           retention-days: 14
+
+  gv02-routine-verify:
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' &&
+          github.ref == 'refs/heads/governance/gv02-control-v2' &&
+          github.repository_id == '1247665550' && github.sha == vars.GV02_ROUTINE_CONTROL_SHA &&
+          inputs.mode == 'gv02-protected-executor' && github.actor_id == '41898282' &&
+          github.triggering_actor == 'github-actions[bot]' && github.run_attempt == '1' &&
+          ((vars.GV02_ROUTINE_ENABLED == 'true' && vars.GV02_SHADOW_PR == '') ||
+           (vars.GV02_SHADOW_PR != '' && vars.GV02_SHADOW_PR == inputs.candidate_pr &&
+            vars.GV02_ROUTINE_ENABLED != 'true' && vars.GV02_ROUTINE_MERGE_ENABLED != 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    permissions: &gv02-read-permissions
+      actions: read
+      checks: read
+      contents: read
+      pull-requests: read
+    env: &gv02-binding
+      GH_TOKEN: ${{ github.token }}
+      GV02_CONTROL_SHA: ${{ vars.GV02_ROUTINE_CONTROL_SHA }}
+      GV02_PR: ${{ inputs.candidate_pr }}
+      GV02_BASELINE_ARTIFACT: ${{ inputs.gv02_baseline_artifact }}
+      GV02_R1_ARTIFACT: ${{ inputs.gv02_r1_artifact }}
+      GV02_R1_POLICY: ${{ vars.GV02_ROUTINE_POLICY }}
+      GV02_ROUTINE_ENABLED: ${{ vars.GV02_ROUTINE_ENABLED }}
+      GV02_ROUTINE_MERGE_ENABLED: ${{ vars.GV02_ROUTINE_MERGE_ENABLED }}
+      GV02_SHADOW_PR: ${{ vars.GV02_SHADOW_PR }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: &gv02-control-checkout
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify originals without App credentials
+        env:
+          GV02_MODE: verify
+        run: node scripts/governance/source-admission/gv02-executor.mjs
+
+  gv02-routine-admission:
+    needs: gv02-routine-verify
+    if: ${{ needs.gv02-routine-verify.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment: gv02-r1-check-development
+    timeout-minutes: 4
+    concurrency:
+      group: gv02-r1-admission-${{ inputs.candidate_pr }}
+      cancel-in-progress: false
+    permissions: *gv02-read-permissions
+    env: *gv02-binding
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: *gv02-control-checkout
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Publish exact adequate evidence with check-only installation
+        env:
+          GV02_MODE: admission
+          GV02_CHECK_APP_PRIVATE_KEY: ${{ secrets.GV02_CHECK_APP_PRIVATE_KEY }}
+        run: node scripts/governance/source-admission/gv02-executor.mjs
+
+  gv02-routine-merge:
+    needs: gv02-routine-admission
+    if: >-
+      ${{ needs.gv02-routine-admission.result == 'success' && vars.GV02_ROUTINE_ENABLED == 'true' &&
+          vars.GV02_ROUTINE_MERGE_ENABLED == 'true' && vars.GV02_SHADOW_PR == '' }}
+    runs-on: ubuntu-latest
+    environment: gv02-r1-merge-development
+    timeout-minutes: 4
+    concurrency:
+      group: sgdev-gv02-main-merge
+      cancel-in-progress: false
+    permissions: *gv02-read-permissions
+    env: *gv02-binding
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: *gv02-control-checkout
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Enforce both rules and merge with the separate installation
+        env:
+          GV02_MODE: merge
+          GV02_MERGE_APP_PRIVATE_KEY: ${{ secrets.GV02_MERGE_APP_PRIVATE_KEY }}
+        run: node scripts/governance/source-admission/gv02-executor.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gv02-merge-receipt
+          path: ${{ runner.temp }}/gv02-merge-receipt.json
+          retention-days: 14
+          if-no-files-found: error
