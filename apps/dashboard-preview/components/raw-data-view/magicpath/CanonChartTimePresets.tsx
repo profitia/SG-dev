@@ -41,7 +41,9 @@ export function CanonChartTimePresets({
   return <CanonElement as="div" canonId="SRM-C86" usage="CanonChartTimePresets:rail" className="srm-chart-time-presets" role="group" aria-label={polish ? 'Zakres czasu wykresu' : 'Chart time range'} style={chartTimePresetVariables as React.CSSProperties}>
     {chartTimePresets.map(preset => {
       const label = polish ? preset.label : englishRangeLabels[preset.id];
-      const accessibleName = polish && preset.id !== 'All' ? `Zakres ${preset.id}` : label;
+      const accessibleName = preset.id === 'All'
+        ? label
+        : polish ? `Zakres ${preset.id}` : `${preset.id} – ${label}`;
       return <CanonButton key={preset.id} type="button" canonId="SRM-C86" usage={'CanonChartTimePresets:' + preset.id} className="srm-chart-time-preset" aria-pressed={value === preset.id} aria-label={accessibleName} aria-controls={controls} title={label} disabled={disabled} onClick={() => onChange(preset.id)}>
         {polish && preset.id === 'All' ? 'Cała' : preset.id}
       </CanonButton>;
