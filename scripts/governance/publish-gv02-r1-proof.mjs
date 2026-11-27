@@ -18,7 +18,7 @@ const publisherJob = 'Publish GV-02 R1 proof'
 const chartPath = 'apps/dashboard-preview/components/raw-data-view/magicpath/CanonChartTimePresets.tsx'
 const r1Paths = { [chartPath]: 'Dashboard Preview' }
 export const automationActor = 41898282
-export const controlBranch = 'governance/gv02-control-v4'
+export const controlBranch = 'governance/gv02-control-v5'
 const automationLogin = 'github-actions[bot]'
 const baselineWorkflow = 362561378
 const governanceWorkflow = '.github/workflows/governance-preflight.yml'
@@ -250,6 +250,20 @@ async function latestArtifact(read, runId, name) {
   return artifacts[0]
 }
 
+export function matchesTestComposition(testMerge, { main, head, tree }) {
+  return [main, head, tree, testMerge?.sha].every(isOid) && testMerge.tree === tree &&
+    canonical(testMerge.parents) === canonical([main, head])
+}
+
+export async function baselineMergeMatches(read, proofSha, observed, binding) {
+  if (!isOid(proofSha) || !matchesTestComposition(observed, binding)) return false
+  if (proofSha === observed.sha) return true
+  const commit = await read(api + '/git/commits/' + proofSha)
+  return commit?.sha === proofSha && matchesTestComposition({
+    sha: commit.sha, tree: commit.tree?.sha, parents: commit.parents?.map(parent => parent.sha),
+  }, binding)
+}
+
 async function baselineArtifact(read, download, snap, runnerTemp) {
   const head = snap.pr.head.sha
   const endpoint = api + '/actions/workflows/' + baselineWorkflow + '/runs?event=pull_request&head_sha=' + head + '&per_page=100'
@@ -263,8 +277,10 @@ async function baselineArtifact(read, download, snap, runnerTemp) {
       const proof = readArtifact(artifact, download(api + '/actions/artifacts/' + artifact.id + '/zip'),
         runnerTemp, 'gv02-pr-baseline.json')
       if (proof.repositoryId === repoId && proof.pr === snap.pr.number && proof.base === snap.main &&
-          proof.head === head && proof.testMerge === snap.testMerge.sha && proof.tree === snap.testMerge.tree &&
-          proof.run === run.id && proof.attempt === run.run_attempt) return artifact.id
+          proof.head === head && proof.tree === snap.testMerge.tree &&
+          proof.run === run.id && proof.attempt === run.run_attempt &&
+          await baselineMergeMatches(read, proof.testMerge, snap.testMerge,
+            { main: snap.main, head, tree: snap.testMerge.tree })) return artifact.id
     }
     if (poll < 4) await pause(3000)
   }
@@ -274,7 +290,8 @@ async function baselineArtifact(read, download, snap, runnerTemp) {
 function sourceIdentity(snap) {
   return [snap.repo.id, snap.main, snap.pr.number, snap.pr.user?.id, snap.pr.head.sha,
     snap.pr.head.repo?.id, snap.pr.base.repo?.id, snap.pr.base.ref, snap.pr.draft,
-    snap.pr.state, snap.pr.merged, snap.pr.mergeable, snap.testMerge]
+    snap.pr.state, snap.pr.merged, snap.pr.mergeable,
+    isOid(snap.testMerge?.sha) ? [snap.testMerge.tree, snap.testMerge.parents] : null]
 }
 
 function assertAutomationRun(run, expected) {
@@ -377,7 +394,7 @@ export async function completeR1Handoff({
     return executor.id
   }
   const baseline = await baselineArtifact(read, download, snap, runnerTemp)
-  // Neither a delayed producer nor a refreshed test merge can authorize the handoff.
+  // Neither a delayed producer nor a different integration composition can authorize the handoff.
   const [freshRun, freshArtifact] = await Promise.all([
     read(api + '/actions/runs/' + producer.id), read(api + '/actions/artifacts/' + artifact.id),
     assertCurrent(), assertControlRef(read, control),
