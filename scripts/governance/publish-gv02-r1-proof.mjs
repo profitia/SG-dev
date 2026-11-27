@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { setTimeout as pause } from 'node:timers/promises'
 import { resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
-import { canonical, gitReader, inspectSource, isOid, readGitHubSnapshot, sha256 } from './source-admission/source.mjs'
+import { canonical, gitReader, inspectSource, isOid, readGitHubSnapshot, requireThat, sha256 } from './source-admission/source.mjs'
 
 const repository = 'profitia/SG-dev'
 const repoId = 1247665550
@@ -18,7 +18,7 @@ const publisherJob = 'Publish GV-02 R1 proof'
 const chartPath = 'apps/dashboard-preview/components/raw-data-view/magicpath/CanonChartTimePresets.tsx'
 const r1Paths = { [chartPath]: 'Dashboard Preview' }
 export const automationActor = 41898282
-export const controlBranch = 'governance/gv02-control-v2'
+export const controlBranch = 'governance/gv02-control-v3'
 const automationLogin = 'github-actions[bot]'
 const baselineWorkflow = 362561378
 const governanceWorkflow = '.github/workflows/governance-preflight.yml'
@@ -37,6 +37,9 @@ const routineViewShape = '1685b2cdd43ee9eee974c650f3c14532de7c0af17a02bc75051da8
 const labelsBlock = /^const englishRangeLabels: Record<ChartTimePreset, string> = \{\n([^]*?)^\};$/m
 const api = '/repos/' + repository
 const maxZip = 1024 * 1024
+const producerWaitMs = 20 * 60_000
+const handoffPollMs = 15_000
+const publishChecks = { dashboard: 'PASS', embedded: 'PASS', typecheck: 'PASS', build: 'PASS' }
 
 export function routinePrPermitted(env, pr) {
   if (!Number.isSafeInteger(pr) || pr <= 0) return false
@@ -269,12 +272,123 @@ async function baselineArtifact(read, download, snap, runnerTemp) {
 }
 
 function sourceIdentity(snap) {
-  return [snap.main, snap.pr.number, snap.pr.user?.id, snap.pr.head.sha, snap.pr.draft,
-    snap.pr.state, snap.pr.mergeable, snap.testMerge]
+  return [snap.repo.id, snap.main, snap.pr.number, snap.pr.user?.id, snap.pr.head.sha,
+    snap.pr.head.repo?.id, snap.pr.base.repo?.id, snap.pr.base.ref, snap.pr.draft,
+    snap.pr.state, snap.pr.merged, snap.pr.mergeable, snap.testMerge]
 }
 
-function proofTitle(pr, head, main) {
-  return 'GV02 R1 ' + pr + ' ' + head + ' ' + main
+function assertAutomationRun(run, expected) {
+  requireThat(Number.isSafeInteger(run.id) && run.id > 0 &&
+    run.workflow_id === workflowId && run.path === workflowPath && run.event === 'workflow_dispatch' &&
+    run.repository?.id === repoId && run.head_repository?.id === repoId &&
+    run.actor?.id === automationActor && run.triggering_actor?.id === automationActor &&
+    run.head_branch === expected.branch && run.head_sha === expected.sha &&
+    run.display_title === expected.title && run.run_attempt === 1, 'R1_AUTOMATION_RUN_REJECTED')
+}
+
+async function findAutomationRun(read, expected, since) {
+  const filters = new URLSearchParams({
+    branch: expected.branch, head_sha: expected.sha, event: 'workflow_dispatch', per_page: '100',
+  })
+  if (since) filters.set('created', '>=' + since)
+  const result = await read(api + '/actions/workflows/' + workflowId + '/runs?' + filters)
+  requireThat(result.total_count === result.workflow_runs.length, 'R1_AUTOMATION_RUN_LIST_INCOMPLETE')
+  const matches = result.workflow_runs.filter(run => run.display_title === expected.title &&
+    run.actor?.id === automationActor)
+  requireThat(matches.length <= 1, 'R1_AUTOMATION_RUN_AMBIGUOUS')
+  const run = matches[0]
+  if (run) assertAutomationRun(run, expected)
+  return run
+}
+
+async function assertControlRef(read, control) {
+  const ref = await read(api + '/git/ref/heads/' + controlBranch)
+  requireThat(ref.ref === 'refs/heads/' + controlBranch && ref.object?.type === 'commit' &&
+    ref.object.sha === control, 'R1_CONTROL_REF_STALE')
+}
+
+async function waitForProducer(read, runId, expected, clock) {
+  const deadline = clock.now() + producerWaitMs
+  for (;;) {
+    requireThat(clock.now() < deadline, 'R1_PRODUCER_WAIT_TIMEOUT')
+    const run = await read(api + '/actions/runs/' + runId)
+    requireThat(run.id === runId, 'R1_PRODUCER_ID_MISMATCH')
+    assertAutomationRun(run, expected)
+    if (run.status === 'completed') {
+      requireThat(run.conclusion === 'success', 'R1_PRODUCER_NOT_SUCCESSFUL')
+      return run
+    }
+    requireThat(['queued', 'pending', 'requested', 'waiting', 'in_progress'].includes(run.status),
+      'R1_PRODUCER_STATE_REJECTED')
+    const remaining = deadline - clock.now()
+    requireThat(remaining > 0, 'R1_PRODUCER_WAIT_TIMEOUT')
+    await clock.sleep(Math.min(remaining, handoffPollMs))
+  }
+}
+
+async function verifyProducerArtifact(read, download, producer, binding, dashboard, inputsDigest, runnerTemp) {
+  const listed = await latestArtifact(read, producer.id, 'gv02-r1-proof')
+  requireThat(Number.isSafeInteger(listed?.id) && listed.id > 0, 'R1_ORIGINAL_PROOF_REQUIRED')
+  const path = api + '/actions/artifacts/' + listed.id
+  const artifact = await read(path)
+  const link = artifact.workflow_run
+  requireThat(artifact.id === listed.id && artifact.name === 'gv02-r1-proof' && artifact.expired === false &&
+    artifact.digest === listed.digest && /^sha256:[0-9a-f]{64}$/.test(artifact.digest) &&
+    link?.id === producer.id && link.repository_id === repoId && link.head_repository_id === repoId &&
+    link.head_sha === binding.main, 'R1_ORIGINAL_PROOF_PROVENANCE_REJECTED')
+  const proof = readArtifact(artifact, await download(path + '/zip'), runnerTemp, 'gv02-r1-proof.json')
+  requireThat(proof.schema === 'sg-gv-02/r1-evidence/v2' && proof.run === producer.id &&
+    proof.attempt === 1 && canonical(proof.binding) === canonical(binding) &&
+    proof.scope === 'PRESENTATION_ONLY' && proof.complete === true && proof.protectedInputsUnchanged === true &&
+    proof.inputsDigest === inputsDigest && canonical(proof.dashboard) === canonical(dashboard) &&
+    canonical(proof.checks) === canonical(publishChecks), 'R1_ORIGINAL_PROOF_BINDING_REJECTED')
+  return artifact
+}
+
+export async function completeR1Handoff({
+  read, download, dispatch, assertCurrent, snap, binding, dashboard, inputsDigest, runnerTemp, control,
+  clock = { now: () => performance.now(), sleep: pause },
+}) {
+  requireThat(isOid(control), 'R1_CONTROL_SHA_REQUIRED')
+  await assertControlRef(read, control)
+  const producerIdentity = {
+    branch: 'main', sha: binding.main, title: 'GV02 R1 ' + binding.pr + ' ' + binding.head + ' ' + binding.main,
+  }
+  const prior = await findAutomationRun(read, producerIdentity)
+  let runId = prior?.id
+  if (!runId) {
+    await assertCurrent()
+    runId = await dispatch('main', {
+      mode: 'publish-gv02-r1-proof', candidate_pr: String(binding.pr), expected_sha: binding.head,
+      proof_run_id: String(dashboard.run), evidence_expected_main: binding.main, evidence_expected_tree: binding.tree,
+    })
+  }
+  const producer = await waitForProducer(read, runId, producerIdentity, clock)
+  await assertCurrent()
+  const artifact = await verifyProducerArtifact(read, download, producer, binding, dashboard, inputsDigest, runnerTemp)
+  const executorIdentity = {
+    branch: controlBranch, sha: control, title: 'GV02 Executor ' + binding.pr + ' ' + artifact.id,
+  }
+  requireThat(Number.isFinite(Date.parse(producer.updated_at)), 'R1_PRODUCER_COMPLETION_TIME_REQUIRED')
+  const executor = await findAutomationRun(read, executorIdentity, producer.updated_at)
+  if (executor) {
+    requireThat(executor.status !== 'completed' || executor.conclusion === 'success', 'R1_EXECUTOR_NOT_SUCCESSFUL')
+    return executor.id
+  }
+  const baseline = await baselineArtifact(read, download, snap, runnerTemp)
+  // Neither a delayed producer nor a refreshed test merge can authorize the handoff.
+  const [freshRun, freshArtifact] = await Promise.all([
+    read(api + '/actions/runs/' + producer.id), read(api + '/actions/artifacts/' + artifact.id),
+    assertCurrent(), assertControlRef(read, control),
+  ])
+  assertAutomationRun(freshRun, producerIdentity)
+  requireThat(freshRun.id === producer.id && freshRun.status === 'completed' &&
+    freshRun.conclusion === 'success' && canonical(freshArtifact) === canonical(artifact),
+  'R1_ORIGINAL_PROOF_CHANGED')
+  return dispatch(controlBranch, {
+    mode: 'gv02-protected-executor', candidate_pr: String(binding.pr),
+    gv02_baseline_artifact: String(baseline), gv02_r1_artifact: String(artifact.id),
+  })
 }
 
 async function requestR1Proof(read, download, dispatch, main, prNumber, runId, env) {
@@ -290,16 +404,23 @@ async function requestR1Proof(read, download, dispatch, main, prNumber, runId, e
     if (error instanceof assert.AssertionError) return
     throw error
   }
-  await dashboardReceipt(read, download, runId, snap, env.RUNNER_TEMP)
-  const prior = await read(api + '/actions/workflows/' + workflowId +
-    '/runs?branch=main&event=workflow_dispatch&head_sha=' + main + '&per_page=100')
-  assert.equal(prior.total_count, prior.workflow_runs.length, 'INCOMPLETE_PRODUCER_RUNS')
-  if (prior.workflow_runs.some(run => run.display_title === proofTitle(prNumber, source.head, main) &&
-      run.head_sha === main && run.actor?.id === automationActor &&
-      (run.status !== 'completed' || run.conclusion === 'success'))) return
-  assert.deepEqual(sourceIdentity(await readGitHubSnapshot(read, repository, prNumber)), sourceIdentity(snap))
-  await dispatch('main', { mode: 'publish-gv02-r1-proof', candidate_pr: String(prNumber), expected_sha: source.head,
-    proof_run_id: String(runId), evidence_expected_main: main, evidence_expected_tree: source.integrationTree })
+  const reader = gitReader(process.cwd())
+  const candidate = reader.commit(source.head)
+  requireThat(canonical(candidate.parents) === canonical([main]) &&
+    candidate.tree === source.integrationTree, 'R1_DIRECT_MAIN_COMPOSITION_REQUIRED')
+  const dashboard = await dashboardReceipt(read, download, runId, snap, env.RUNNER_TEMP)
+  const policy = evidencePolicy(reader.entry(main, workflowPath).oid)
+  const binding = { repository, pr: prNumber, main, head: source.head, tree: source.integrationTree,
+    sourceDigest: source.sourceDigest, policyDigest: sha256(canonical(policy)) }
+  const assertCurrent = async () => requireThat(
+    canonical(sourceIdentity(await readGitHubSnapshot(read, repository, prNumber))) === canonical(sourceIdentity(snap)),
+    'R1_COMPOSITION_STALE')
+  const executor = await completeR1Handoff({
+    read, download, dispatch, assertCurrent, snap, binding, dashboard,
+    inputsDigest: impactInputsDigest(reader, binding, source.testMerge, dashboard),
+    runnerTemp: env.RUNNER_TEMP, control: env.GV02_CONTROL_SHA,
+  })
+  console.log('GV02_R1_EXECUTOR_RUN=' + executor)
 }
 
 export async function coordinate(env) {
@@ -314,7 +435,14 @@ export async function coordinate(env) {
   assert.equal(event.repository?.id, repoId)
   const read = githubClient(env.GH_TOKEN)
   const download = path => downloadEvidence(env.GH_TOKEN, path)
-  const dispatch = (ref, inputs) => read(api + '/actions/workflows/' + workflowId + '/dispatches', { ref, inputs })
+  const dispatch = async (ref, inputs) => {
+    // A POST with an uncertain result is never repeated by this coordinator.
+    const result = await read(api + '/actions/workflows/' + workflowId + '/dispatches',
+      { ref, inputs, return_run_details: true })
+    requireThat(Number.isSafeInteger(result?.workflow_run_id) && result.workflow_run_id > 0,
+      'R1_DISPATCH_RUN_ID_REQUIRED')
+    return result.workflow_run_id
+  }
 
   if (env.GITHUB_EVENT_NAME === 'pull_request_target') {
     assert.equal(event.action, 'ready_for_review')
@@ -342,38 +470,15 @@ export async function coordinate(env) {
   assert.deepEqual([upstream.id, upstream.workflow_id, upstream.path, upstream.repository?.id,
     upstream.head_repository?.id, upstream.status, upstream.run_attempt],
   [upstreamId, workflowId, workflowPath, repoId, repoId, 'completed', event.workflow_run.run_attempt])
-  if (upstream.event === 'pull_request') {
-    assert.ok(isOid(upstream.head_sha))
-    // GitHub can omit pull_requests on the run. Resolve the exact internal open PR independently.
-    const associated = await read(api + '/commits/' + upstream.head_sha + '/pulls?per_page=100')
-    assert.ok(Array.isArray(associated) && associated.length < 100)
-    const matches = associated.filter(pr => pr.state === 'open' && pr.base?.ref === 'main' &&
-      pr.base.repo?.id === repoId && pr.head.repo?.id === repoId &&
-      pr.head.sha === upstream.head_sha && pr.head.ref === upstream.head_branch)
-    if (matches.length === 1) await requestR1Proof(read, download, dispatch, main, matches[0].number, upstreamId, env)
-    return
-  }
-
-  if (upstream.event !== 'workflow_dispatch' || upstream.head_branch !== 'main' ||
-      upstream.head_sha !== main || upstream.actor?.id !== automationActor ||
-      upstream.triggering_actor?.id !== automationActor || upstream.conclusion !== 'success') return
-  const artifact = await latestArtifact(read, upstreamId, 'gv02-r1-proof')
-  if (!artifact) return
-  const proof = readArtifact(artifact, download(api + '/actions/artifacts/' + artifact.id + '/zip'),
-    env.RUNNER_TEMP, 'gv02-r1-proof.json')
-  const pr = proof.binding?.pr
-  assert.ok(Number.isSafeInteger(pr) && pr > 0)
-  if (!routinePrPermitted(env, pr)) return
-  assert.equal(proof.schema, 'sg-gv-02/r1-evidence/v2')
-  assert.equal(proof.run, upstreamId)
-  assert.equal(proof.attempt, upstream.run_attempt)
-  const snap = await readGitHubSnapshot(read, repository, pr)
-  assert.equal(snap.main, main)
-  assert.equal(snap.pr.head.sha, proof.binding.head)
-  assert.equal(snap.testMerge?.tree, proof.binding.tree)
-  const baseline = await baselineArtifact(read, download, snap, env.RUNNER_TEMP)
-  await dispatch(controlBranch, { mode: 'gv02-protected-executor', candidate_pr: String(pr),
-    gv02_baseline_artifact: String(baseline), gv02_r1_artifact: String(artifact.id) })
+  assert.equal(upstream.event, 'pull_request')
+  assert.ok(isOid(upstream.head_sha))
+  // GitHub can omit pull_requests on the run. Resolve the exact internal open PR independently.
+  const associated = await read(api + '/commits/' + upstream.head_sha + '/pulls?per_page=100')
+  assert.ok(Array.isArray(associated) && associated.length < 100)
+  const matches = associated.filter(pr => pr.state === 'open' && pr.base?.ref === 'main' &&
+    pr.base.repo?.id === repoId && pr.head.repo?.id === repoId &&
+    pr.head.sha === upstream.head_sha && pr.head.ref === upstream.head_branch)
+  if (matches.length === 1) await requestR1Proof(read, download, dispatch, main, matches[0].number, upstreamId, env)
 }
 
 function importCandidateObjects(pr) {
@@ -459,7 +564,7 @@ async function main(stage, env) {
   writeFileSync(join(RUNNER_TEMP, 'gv02-r1-proof.json'), JSON.stringify({
     schema: 'sg-gv-02/r1-evidence/v2', run, attempt: 1, binding, scope: 'PRESENTATION_ONLY',
     complete: true, protectedInputsUnchanged: true, inputsDigest, dashboard,
-    checks: { dashboard: 'PASS', embedded: 'PASS', typecheck: 'PASS', build: 'PASS' },
+    checks: publishChecks,
   }) + '\n', { flag: 'wx', mode: 0o600 })
 }
 

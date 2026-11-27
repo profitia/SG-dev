@@ -27,14 +27,9 @@ jobs:
       ${{ github.ref == 'refs/heads/main' && github.repository_id == '1247665550' &&
           (vars.GV02_ROUTINE_ENABLED == 'true' || vars.GV02_SHADOW_PR != '') &&
           (github.event_name == 'pull_request_target' ||
-           (github.event_name == 'workflow_run' &&
-            (github.event.workflow_run.event == 'pull_request' ||
-             (github.event.workflow_run.head_branch == 'main' &&
-              github.event.workflow_run.actor.id == 41898282 &&
-              github.event.workflow_run.conclusion == 'success' &&
-              startsWith(github.event.workflow_run.display_title, 'GV02 R1 '))))) }}
+           (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request')) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 25
     concurrency:
       group: gv02-coordinate-${{ github.event.pull_request.head.sha || (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_sha) || github.run_id }}
       cancel-in-progress: false
@@ -55,6 +50,7 @@ jobs:
       - name: Request exact R1 evidence or isolated verification
         env:
           GH_TOKEN: ${{ github.token }}
+          GV02_CONTROL_SHA: ${{ vars.GV02_ROUTINE_CONTROL_SHA }}
           GV02_ROUTINE_ENABLED: ${{ vars.GV02_ROUTINE_ENABLED }}
           GV02_ROUTINE_MERGE_ENABLED: ${{ vars.GV02_ROUTINE_MERGE_ENABLED }}
           GV02_SHADOW_PR: ${{ vars.GV02_SHADOW_PR }}
