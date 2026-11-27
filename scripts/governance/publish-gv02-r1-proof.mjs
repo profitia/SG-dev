@@ -18,7 +18,7 @@ const publisherJob = 'Publish GV-02 R1 proof'
 const chartPath = 'apps/dashboard-preview/components/raw-data-view/magicpath/CanonChartTimePresets.tsx'
 const r1Paths = { [chartPath]: 'Dashboard Preview' }
 export const automationActor = 41898282
-export const controlBranch = 'governance/gv02-control-v3'
+export const controlBranch = 'governance/gv02-control-v4'
 const automationLogin = 'github-actions[bot]'
 const baselineWorkflow = 362561378
 const governanceWorkflow = '.github/workflows/governance-preflight.yml'
@@ -313,8 +313,9 @@ async function waitForProducer(read, runId, expected, clock) {
     requireThat(clock.now() < deadline, 'R1_PRODUCER_WAIT_TIMEOUT')
     const run = await read(api + '/actions/runs/' + runId)
     requireThat(run.id === runId, 'R1_PRODUCER_ID_MISMATCH')
-    assertAutomationRun(run, expected)
     if (run.status === 'completed') {
+      // Queued metadata may be incomplete. Authenticate the finished run before reading its proof.
+      assertAutomationRun(run, expected)
       requireThat(run.conclusion === 'success', 'R1_PRODUCER_NOT_SUCCESSFUL')
       return run
     }
