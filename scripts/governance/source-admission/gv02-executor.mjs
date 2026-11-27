@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { setTimeout as pause } from 'node:timers/promises'
-import { assertRoutineDelta, automationActor, controlBranch, dashboardReceipt, evidencePolicy,
-  expectedR1Settings, impactInputsDigest, readGitBlob, routinePrPermitted } from '../publish-gv02-r1-proof.mjs'
+import { assertRoutineDelta, automationActor, baselineMergeMatches, controlBranch, dashboardReceipt, evidencePolicy,
+  expectedR1Settings, impactInputsDigest, matchesTestComposition, readGitBlob, routinePrPermitted } from '../publish-gv02-r1-proof.mjs'
 import { resolveProjectProfile } from '../project-profile.mjs'
 import { resolveProjectRouting } from '../routing-engine.mjs'
 import { canonical, gitReader, inspectSource, isOid, readGitHubSnapshot, requireThat, sha256 } from './source.mjs'
@@ -226,9 +226,12 @@ async function verify(read, download, control, prNumber, baselineId, r1Id, polic
       (run.pull_requests.length === 0 ||
         run.pull_requests.some(p => p.number === prNumber && p.head?.sha === source.head)),
   })
+  const composition = { main: authority, head: source.head, tree: source.integrationTree }
   requireThat(same(baseline.proof, { repositoryId: repoId, pr: prNumber, base: authority,
-    head: source.head, testMerge: source.testMerge, tree: source.integrationTree, run: baseline.run,
-    attempt: baseline.attempt }), 'BASELINE_TREE_REJECTED')
+    head: source.head, testMerge: baseline.proof?.testMerge, tree: source.integrationTree, run: baseline.run,
+    attempt: baseline.attempt }) &&
+    await baselineMergeMatches(read, baseline.proof.testMerge, candidate.testMerge, composition),
+  'BASELINE_TREE_REJECTED')
 
   const r1 = await originalArtifact(read, download, r1Id, {
     name: 'gv02-r1-proof', workflowId: policy.producer.workflowId, path: policy.producer.path,
@@ -249,8 +252,8 @@ async function verify(read, download, control, prNumber, baselineId, r1Id, polic
   await assertFrozenControl(read, control)
   requireThat(fresh.main === authority && fresh.pr.head.sha === source.head &&
     fresh.pr.draft === false && fresh.pr.mergeable === true &&
-    same(fresh.testMerge, candidate.testMerge), 'EXECUTION_SOURCE_MOVED')
-  return { control, binding, testMerge: source.testMerge,
+    matchesTestComposition(fresh.testMerge, composition), 'EXECUTION_SOURCE_MOVED')
+  return { control, binding, testMerge: fresh.testMerge.sha,
     evidence: [baseline, r1].map(({ run, attempt, check, artifact, digest }) => ({ run, attempt, check, artifact, digest })) }
 }
 
@@ -295,25 +298,37 @@ async function withInstallation(key, role, use) {
   }
 }
 
-export function admissionIdentity(expected) {
-  return sha256(canonical(expected))
+export function admissionIdentity({ control, binding, evidence }) {
+  return sha256(canonical({ schema: 'sg-gv-02/head-admission/v1', control, binding, evidence }))
+}
+
+export function matchesAdmission(check, expected) {
+  return check.app?.id === admissionApp && check.name === admissionCheck &&
+    check.head_sha === expected.binding.head && check.external_id === admissionIdentity(expected) &&
+    check.status === 'completed' && check.conclusion === 'success'
 }
 
 async function authenticAdmission(read, expected) {
-  const checks = await read(repositoryApi + '/commits/' + expected.testMerge +
+  const checks = await read(repositoryApi + '/commits/' + expected.binding.head +
     '/check-runs?check_name=' + admissionCheck + '&filter=all&per_page=100')
   requireThat(checks.total_count === checks.check_runs.length, 'INCOMPLETE_ADMISSION_CHECKS')
-  return checks.check_runs.find(check => check.app?.id === admissionApp && check.name === admissionCheck &&
-    check.head_sha === expected.testMerge && check.external_id === admissionIdentity(expected) &&
-    check.status === 'completed' && check.conclusion === 'success')
+  return checks.check_runs.find(check => matchesAdmission(check, expected))
+}
+
+export async function assertHeadCheckFallback(read, testMergeSha) {
+  const path = repositoryApi + '/commits/' + testMergeSha
+  const [checks, statuses] = await Promise.all([
+    read(path + '/check-runs?filter=all&per_page=1'), read(path + '/status?per_page=1'),
+  ])
+  requireThat(checks.total_count === 0 && statuses.total_count === 0, 'HEAD_CHECK_FALLBACK_NOT_PROVEN')
 }
 
 async function recheck(read, expected) {
-  const { pr, main, head, tree } = expected.binding
+  const { pr, main, head } = expected.binding
   const fresh = await readGitHubSnapshot(read, repository, pr)
   requireThat(fresh.main === main && fresh.pr.head.sha === head &&
-    fresh.pr.draft === false && fresh.pr.mergeable === true && fresh.testMerge?.sha === expected.testMerge &&
-    fresh.testMerge.tree === tree, 'EXECUTION_SOURCE_MOVED')
+    fresh.pr.draft === false && fresh.pr.mergeable === true &&
+    matchesTestComposition(fresh.testMerge, expected.binding), 'EXECUTION_SOURCE_MOVED')
   await assertFrozenControl(read, expected.control)
   for (const proof of expected.evidence) {
     const [run, artifact] = await Promise.all([read(repositoryApi + '/actions/runs/' + proof.run),
@@ -322,6 +337,7 @@ async function recheck(read, expected) {
       run.conclusion === 'success' && artifact.workflow_run?.id === proof.run &&
       artifact.digest === proof.digest && artifact.expired === false, 'PROOF_ATTEMPT_MOVED')
   }
+  return fresh
 }
 
 export function assertMergedTree(receipt, before, after, pr, commit) {
@@ -385,10 +401,8 @@ async function readMergedReceipt(read, download, env, event) {
       assertMergedTree(proof, before, after, pr, commit)
       requireThat(same(testMerge.parents.map(parent => parent.sha), [before, proof.binding.head]) &&
         testMerge.tree.sha === proof.binding.tree, 'MERGED_TEST_TREE_REJECTED')
-      const expected = { control, binding: proof.binding, testMerge: proof.testMerge, evidence: proof.evidence }
-      requireThat(check.id === proof.admission && check.name === admissionCheck && check.app?.id === admissionApp &&
-        check.head_sha === proof.testMerge && check.external_id === admissionIdentity(expected) &&
-        check.status === 'completed' && check.conclusion === 'success', 'MERGED_ADMISSION_CHECK_REJECTED')
+      const expected = { control, binding: proof.binding, evidence: proof.evidence }
+      requireThat(check.id === proof.admission && matchesAdmission(check, expected), 'MERGED_ADMISSION_CHECK_REJECTED')
       await assertFrozenControl(read, control)
       return
     }
@@ -440,10 +454,10 @@ async function main() {
       await recheck(read, expected)
       const check = await github(repositoryApi + '/check-runs', appToken, { method: 'POST', status: 201,
         body: { name: admissionCheck, external_id: admissionIdentity(expected),
-          head_sha: expected.testMerge, status: 'completed', conclusion: 'success' },
+          head_sha: expected.binding.head, status: 'completed', conclusion: 'success' },
       })
-      requireThat(check.app?.id === admissionApp && check.head_sha === expected.testMerge &&
-        await authenticAdmission(read, expected), 'ADMISSION_PUBLICATION_REQUIRES_READBACK')
+      requireThat(matchesAdmission(check, expected) &&
+        (await authenticAdmission(read, expected))?.id === check.id, 'ADMISSION_PUBLICATION_REQUIRES_READBACK')
     })
     return
   }
@@ -452,9 +466,10 @@ async function main() {
   const admission = await authenticAdmission(read, expected)
   requireThat(admission && positiveId(admission.id), 'REQUIRED_ADMISSION_CHECK_MISSING')
   await withInstallation(env.GV02_MERGE_APP_PRIVATE_KEY, 'merge', async appToken => {
-    await recheck(read, expected)
+    const fresh = await recheck(read, expected)
     assertMergeRules(await read(repositoryApi + '/rules/branches/main'))
     requireThat((await authenticAdmission(read, expected))?.id === admission.id, 'ADMISSION_CHECK_MOVED')
+    await assertHeadCheckFallback(read, fresh.testMerge.sha)
     let result
     try {
       result = await github(repositoryApi + '/pulls/' + pr + '/merge', appToken, {
