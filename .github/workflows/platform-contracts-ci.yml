@@ -1,5 +1,7 @@
 name: Platform contract integration
-run-name: ${{ inputs.mode == 'publish-gv02-r1-proof' && format('GV02 R1 {0} {1} {2}', inputs.candidate_pr, inputs.expected_sha, inputs.evidence_expected_main) || '' }}
+run-name: >-
+  ${{ inputs.mode == 'publish-gv02-r1-proof' && format('GV02 R1 {0} {1} {2}', inputs.candidate_pr, inputs.expected_sha, inputs.evidence_expected_main) ||
+      inputs.mode == 'gv02-protected-executor' && format('GV02 Executor {0} {1}', inputs.candidate_pr, inputs.gv02_r1_artifact) || '' }}
 
 on:
   pull_request:
@@ -855,7 +857,7 @@ jobs:
   gv02-routine-verify:
     if: >-
       ${{ github.event_name == 'workflow_dispatch' &&
-          github.ref == 'refs/heads/governance/gv02-control-v2' &&
+          github.ref == 'refs/heads/governance/gv02-control-v3' &&
           github.repository_id == '1247665550' && github.sha == vars.GV02_ROUTINE_CONTROL_SHA &&
           inputs.mode == 'gv02-protected-executor' && github.actor_id == '41898282' &&
           github.triggering_actor == 'github-actions[bot]' && github.run_attempt == '1' &&
