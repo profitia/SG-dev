@@ -62,13 +62,20 @@ test('SYNTHETIC_ONLY: private recurring orders enqueue the real producer without
  const subscriptions=new PostgresSubscriptionStore(store,{recurring:true});
  const forbidden=new Proxy({},{get(){throw Error('SYNTHETIC_DISPATCH_MUST_NOT_CALL_EXTERNAL_PORTS')}});
  const runner=createReportRunner({store,authority:forbidden,sources:forbidden,canonical:forbidden,composer:forbidden,quality:forbidden,renderer:forbidden});
- const recurring=await createRecurringSubscriptions({configuration:c,receiver:{independentQuery:db.query,transact:db.transact},store,runner,privateKey:f.components.report.key.privateKey,fetch:transport});
+ const slot=new Date(Math.ceil(Date.now()/60000)*60000).toISOString();
+ // Stabilize activation scheduling only; execution and native E1 keep real time.
+ let activationClock=null;
+ const recurring=await createRecurringSubscriptions({configuration:c,receiver:{independentQuery:db.query,transact:db.transact},store,runner,privateKey:f.components.report.key.privateKey,fetch:transport,now:()=>activationClock??Date.now()});
  const profile={definitionId:'oil-asphalt',profileVersion:producerProfile.version,availability:'AVAILABLE',subjectMode:'NONE',cadences:['ONCE','WEEKLY'],timeZones:['Europe/Warsaw'],deliveryChannels:['ASSISTANT']};
  const api=createSubscriptionApi({authority,store:subscriptions,profiles:()=>[profile],recurring,onOrder:()=>assert.fail('Cyclic order must not invoke one-off generation')});
- const slot=new Date(Math.ceil(Date.now()/60000)*60000).toISOString(),parts=localParts(slot),weekday=new Date(parts.date).getUTCDay();
+ const parts=localParts(slot),weekday=new Date(parts.date).getUTCDay();
  const input={contractVersion:'procurement-insights.subscription/1.0.0',name:'SYNTHETIC_ONLY',definitionId:profile.definitionId,profileVersion:profile.profileVersion,subjectRef:null,schedule:{frequency:'WEEKLY',weekday,localTime:parts.time,timeZone:'Europe/Warsaw',startDate:parts.date,endDate:null},notifications:{assistant:true,email:false}};
  const req=(suffix='',{method='GET',body,token='SYNTHETIC_A',key=randomUUID()}={})=>new Request(f.origin+'/api/v1/insights/subscriptions'+suffix,{method,headers:{authorization:'Bearer '+token,...(body?{'content-type':'application/json','idempotency-key':key}:{})},body:body?JSON.stringify(body):undefined});
- const create=async()=>{const r=await api(req('',{method:'POST',body:input}));assert.equal(r.status,201,JSON.stringify(await r.clone().json()));return r.json()};
+ const create=async()=>{
+  activationClock=Date.parse(slot)-1;
+  try{const r=await api(req('',{method:'POST',body:input}));assert.equal(r.status,201,JSON.stringify(await r.clone().json()));return r.json()}
+  finally{activationClock=null}
+ };
  await t.test('current private schema, actual key and explicit recurring registration are required for readiness',async()=>{assert.equal(await recurring.ready(),true)});
  let order,job;
  await t.test('HUMAN order consents; SERVICE enqueues and links a genuine producer job at T-3h',async()=>{
