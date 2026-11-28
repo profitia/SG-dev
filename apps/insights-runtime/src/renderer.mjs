@@ -7,6 +7,7 @@ import {
   digest,
   requireThat,
 } from "@profitia/insights-contracts";
+import { canonicalMarketCitations } from "./citations.mjs";
 export function createRenderer({ python = "python3" } = {}) {
   return async (job, bundle, composed, gate) => {
     const root = new URL("../render/", import.meta.url),
@@ -25,6 +26,7 @@ export function createRenderer({ python = "python3" } = {}) {
         bundle,
         narrative: composed.narrative,
         receipt: composed,
+        marketCitations: canonicalMarketCitations(bundle),
       }))
         await writeFile(join(dir, n + ".json"), JSON.stringify(v), {
           mode: 0o600,
@@ -37,6 +39,8 @@ export function createRenderer({ python = "python3" } = {}) {
         join(dir, "narrative.json"),
         "--receipt",
         join(dir, "receipt.json"),
+        "--market-citations",
+        join(dir, "marketCitations.json"),
         "--output",
         join(dir, "output"),
         "--font",
