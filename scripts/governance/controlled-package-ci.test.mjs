@@ -3404,7 +3404,8 @@ test('public proof absence preserves every original authority-source contract fi
 })
 
 
-test('quality Stage1 resolution fences the exact internal SG2 candidate and authenticates the complete file list',async()=>{
+test('quality Stage1 resolution fences the exact internal SG2 candidate and authenticates the complete file list',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.parse('2026-11-27T23:59:58.000Z')})
  const c=await import('./controlled-package-ci.mjs'),source='529ce28a57120b0eee28b225736a9aeb922b06de',base='08621a1335c56dd8f72a3e4f4864de947da8eee7'
  const files=execFileSync('git',['diff','--name-status','--no-renames',base+'...'+source],{cwd:authorityRoot,encoding:'utf8'}).trim().split('\n').map(line=>{
   const [status,filename]=line.split('\t'),entry=execFileSync('git',['ls-tree',source,'--',filename],{cwd:authorityRoot,encoding:'utf8'}).trim()
@@ -3814,7 +3815,8 @@ test('CI24 trusted source verifies the complete new host closure without executi
  assert.throws(()=>trustedQualityPredecessor(p=>{if(p===receipt){const a=JSON.parse(current(p));a.sourceDigests[hook]='0'.repeat(64);return Buffer.from(JSON.stringify(a))}return current(p)},historical))
 })
 
-test('CI24 editorial package actual candidate authenticates checkout, branch and every source before private installation',async()=>{
+test('CI24 editorial package actual candidate authenticates checkout, branch and every source before private installation',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.parse('2026-11-27T23:59:58.000Z')})
  const c=await import('./controlled-package-ci.mjs'),source='ce20210fd3ea4c78529504ecc526709697c183f3',base='d5eb40a061dd24c5ea65f9f373682179458cb589'
  const files=execFileSync('git',['diff','--name-status','--no-renames',base+'...'+source],{cwd:authorityRoot,encoding:'utf8'}).trim().split('\n').map(line=>{
   const [status,filename]=line.split('\t'),entry=execFileSync('git',['ls-tree',source,'--',filename],{cwd:authorityRoot,encoding:'utf8'}).trim()
@@ -3921,7 +3923,7 @@ compositionTest('editorial composition successor delegates only the exact old re
 test('CI24 editorial composition retains 24 paths and rejects the superseded Finder adapter',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
  assert.equal(r.paths.length,24);assert(r.paths.includes('apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs'));assert(!r.paths.includes('apps/sg-runtime/tests/finder-monitor-source-integrity.mjs'))
- assert.throws(()=>c.assertQualityStage1SourceFiles([{filename:'apps/sg-runtime/tests/finder-monitor-source-integrity.mjs',status:'modified',sha:'a'.repeat(40)}]),/QUALITY_STAGE1_SOURCE_SCOPE_REJECTED/)
+ assert.throws(()=>c.assertQualityStage1SourceFiles([{filename:'apps/sg-runtime/tests/finder-monitor-source-integrity.mjs',status:'modified',sha:'a'.repeat(40)}],Date.parse('2026-11-27T23:59:58.000Z')),/QUALITY_STAGE1_SOURCE_SCOPE_REJECTED/)
 })
 test('CI24 exact CIC and accepted editorial F composition authenticates every source and all29 prior receipts',async()=>{
  const c=await import('./controlled-package-ci.mjs'),source='ce20210fd3ea4c78529504ecc526709697c183f3',cache=new Map()
