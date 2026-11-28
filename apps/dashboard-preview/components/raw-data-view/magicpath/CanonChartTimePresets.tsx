@@ -4,7 +4,7 @@ import { chartTimePresets, chartTimePresetVariables, type ChartTimePreset } from
 
 const englishRangeLabels: Record<ChartTimePreset, string> = {
   '1M': '1 month ending at the latest observation',
-  '3M': 'Last 3 months',
+  '3M': '3 months ending at the latest observation',
   '6M': 'Last 6 months',
   '1Y': '1 year ending at the latest observation',
   '3Y': 'Last 3 years',
