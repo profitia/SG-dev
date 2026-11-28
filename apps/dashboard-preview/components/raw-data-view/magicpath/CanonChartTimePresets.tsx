@@ -3,10 +3,10 @@ import { CanonButton, CanonElement } from './CanonElements';
 import { chartTimePresets, chartTimePresetVariables, type ChartTimePreset } from './chart-time-presets';
 
 const englishRangeLabels: Record<ChartTimePreset, string> = {
-  '1M': 'Last month',
+  '1M': '1 month ending at the latest observation',
   '3M': 'Last 3 months',
   '6M': 'Last 6 months',
-  '1Y': 'Last year',
+  '1Y': '1 year ending at the latest observation',
   '3Y': 'Last 3 years',
   '5Y': 'Last 5 years',
   All: 'All available history'
